@@ -18,3 +18,7 @@ class BotLog(BaseModel):
     timestamp: datetime
     message: str
     type: str  # "dilemma", "navigation", "error"
+
+class EconomyData(BaseModel):
+    timestamp: datetime
+    value: float

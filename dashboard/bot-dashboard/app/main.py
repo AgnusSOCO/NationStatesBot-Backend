@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 from typing import List, Optional
-from .models import BotStatus, BotConfig, BotLog
+from .models import BotStatus, BotConfig, BotLog, EconomyData
 
 app = FastAPI()
 
@@ -62,6 +62,21 @@ async def update_config(config: BotConfig):
     bot_config = config
     bot_status.nation_name = config.nation_name
     return bot_config
+
+@app.get("/api/economy")
+async def get_economy_data():
+    data = []
+    try:
+        with open("economy_data.txt", "r") as file:
+            for line in file:
+                nation, value = line.strip().split(": ")
+                data.append(EconomyData(
+                    timestamp=datetime.now(),
+                    value=float(value)
+                ))
+    except FileNotFoundError:
+        pass
+    return data
 
 @app.get("/healthz")
 async def healthz():
