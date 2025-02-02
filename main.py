@@ -1,12 +1,14 @@
-from config import bot
+from config import bot, browser
 from utilities import display_banner, get_user_input, extract_economy_data
 from web_automation import login, answer_dilemma, random_navigation
 import discord_bot
 import asyncio
 import random
 
-async def main():
+async def main() -> None:
     display_banner()
+    nation_name: str
+    password: str
     nation_name, password = get_user_input()
     login(nation_name, password)
     
