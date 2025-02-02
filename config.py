@@ -1,6 +1,14 @@
+import os
+from dotenv import load_dotenv
 import discord
 from discord.ext import commands
 from selenium import webdriver
+
+load_dotenv()
+
+# AI Configuration
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+MODEL_NAME = "gpt-3.5-turbo"  # Same model as previously used with g4f
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
