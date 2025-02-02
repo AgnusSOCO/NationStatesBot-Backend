@@ -15,6 +15,8 @@ An automated bot for NationStates.net that uses AI for strategic decision-making
 - **Real-Time Dashboard**: Monitor and control your bot through a modern web interface
 - **Activity Logging**: Comprehensive logging of all bot actions and decisions
 - **Discord Integration**: Optional notifications and controls through Discord
+- **Economic Data Tracking**: Monitor and analyze your nation's economic performance
+- **Human-Like Behavior**: Automated web navigation that mimics natural user patterns
 
 ## 📊 Dashboard
 
@@ -24,6 +26,7 @@ The NationStatesBot now includes a modern web dashboard for real-time monitoring
 - **Action Logs**: View detailed logs of dilemmas, decisions, and navigation
 - **Control Panel**: Start/stop the bot and configure settings
 - **Dark Mode**: Comfortable viewing in any lighting condition
+- **Economic Analytics**: Track and visualize your nation's economic data
 
 ## 🛠 Prerequisites
 
@@ -31,6 +34,7 @@ The NationStatesBot now includes a modern web dashboard for real-time monitoring
 - Node.js 18+ (for dashboard)
 - Chrome/Chromium browser
 - Discord bot token (optional)
+- NationStates.net account
 
 ## 📦 Installation
 
@@ -58,6 +62,9 @@ npm install
 NATION_NAME = "your_nation"
 PASSWORD = "your_password"
 DISCORD_TOKEN = "your_discord_token"  # Optional
+CHROME_PATH = "/path/to/chrome"      # Update with your Chrome binary path
+DRIVER_PATH = "/path/to/chromedriver" # Update with your ChromeDriver path
+CHANNEL_ID = "your_discord_channel"   # For Discord notifications
 ```
 
 2. Start the backend server:
@@ -72,14 +79,33 @@ cd dashboard/bot-dashboard-ui
 npm run dev
 ```
 
+## 🎮 Usage
+
+1. Start the bot:
+```bash
+python main.py
+```
+
+2. Follow the prompts to enter:
+- Nation name
+- Password
+
+The bot will then:
+- Log into your NationStates account
+- Monitor for dilemmas
+- Make AI-powered decisions
+- Update the dashboard in real-time
+- Track economic data
+- Send optional Discord notifications
+
 ## 🏗 Project Architecture
 
 ```
 NationStatesBot-Backend/
-├── main.py              # Bot entry point
-├── web_automation.py    # Web interaction logic
+├── main.py              # Bot entry point and main loop
+├── web_automation.py    # Browser automation and AI decision making
 ├── utilities.py         # Helper functions
-├── config.py           # Configuration
+├── config.py           # Configuration settings
 ├── discord_bot.py      # Discord integration
 ├── dashboard/          # Web dashboard
 │   ├── bot-dashboard/  # FastAPI backend
@@ -93,6 +119,8 @@ NationStatesBot-Backend/
 - Don't share your config.py
 - Use environment variables for sensitive data
 - Follow NationStates.net ToS
+- Review AI decisions before implementing in production
+- Keep your Discord bot token private
 
 ## 🤝 Contributing
 
