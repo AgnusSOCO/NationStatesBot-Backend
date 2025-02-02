@@ -1,4 +1,7 @@
 import logging
+from typing import Optional
+
+__all__ = ['wait', 'bot', 'find_chrome_binary', 'get_browser_version']
 
 logging.basicConfig(
     level=logging.INFO,
