@@ -20,27 +20,37 @@ from pathlib import Path
 def find_chrome_binary():
     """Find Chrome or Chromium binary path based on platform."""
     system = platform.system()
+    logging.info(f"Detecting browser binary on {system}")
     chrome_paths = {
         'Darwin': [
             '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
             '/Applications/Chromium.app/Contents/MacOS/Chromium',
-            '/Applications/Google Chrome Beta.app/Contents/MacOS/Google Chrome Beta'
+            '/Applications/Google Chrome Beta.app/Contents/MacOS/Google Chrome Beta',
+            '/Applications/Thorium.app/Contents/MacOS/Thorium'
         ],
         'Windows': [
             r'C:\Program Files\Google\Chrome\Application\chrome.exe',
-            r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe'
+            r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
+            r'C:\Program Files\Thorium\Application\thorium.exe',
+            r'C:\Program Files (x86)\Thorium\Application\thorium.exe'
         ],
         'Linux': [
             '/usr/bin/google-chrome',
-            '/usr/bin/chromium-browser'
+            '/usr/bin/chromium-browser',
+            '/usr/bin/thorium-browser'
         ]
     }
     
     for path in chrome_paths.get(system, []):
+        logging.debug(f"Checking browser path: {path}")
         if Path(path).exists():
+            logging.info(f"Found browser binary at: {path}")
             return path
             
-    raise RuntimeError(f"Could not find Chrome/Chromium binary on {system}. Please install Chrome or Chromium browser.")
+    supported_browsers = "Chrome, Chromium, or Thorium"
+    error_msg = f"Could not find {supported_browsers} binary on {system}. Please install one of: {supported_browsers}"
+    logging.error(error_msg)
+    raise RuntimeError(error_msg)
 
 def create_browser():
     chrome_options = Options()
