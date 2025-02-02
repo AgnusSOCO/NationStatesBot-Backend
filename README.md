@@ -1,48 +1,86 @@
-# NationStatesBot-Backend
+# NationStatesBot 🌐
 
-An automated bot for NationStates.net that uses AI to make strategic decisions and Discord integration for monitoring.
+[![Python Version](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.109.0-009688.svg)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React-18.2.0-61DAFB.svg)](https://reactjs.org)
+[![Discord.py](https://img.shields.io/badge/Discord.py-2.3.2-7289DA.svg)](https://discordpy.readthedocs.io/)
 
-## Features
-- AI-powered decision making for nation dilemmas
-- Discord bot integration for monitoring and control
-- Automated web navigation with human-like behavior
-- Economic data tracking and analysis
+An automated bot for NationStates.net that uses AI for strategic decision-making. Features include automated dilemma resolution, activity monitoring, and a real-time dashboard interface.
 
-## Prerequisites
-- Python 3.11+
+## 🚀 Features
+
+- **AI-Powered Decision Making**: Utilizes advanced AI models to make strategic decisions for your nation
+- **Automated Dilemma Resolution**: Automatically handles nation dilemmas with intelligent choices
+- **Real-Time Dashboard**: Monitor and control your bot through a modern web interface
+- **Activity Logging**: Comprehensive logging of all bot actions and decisions
+- **Discord Integration**: Optional notifications and controls through Discord
+- **Economic Data Tracking**: Monitor and analyze your nation's economic performance
+- **Human-Like Behavior**: Automated web navigation that mimics natural user patterns
+
+## 📊 Dashboard
+
+The NationStatesBot now includes a modern web dashboard for real-time monitoring and control:
+
+- **Live Status**: Monitor bot status, version, and current nation
+- **Action Logs**: View detailed logs of dilemmas, decisions, and navigation
+- **Control Panel**: Start/stop the bot and configure settings
+- **Dark Mode**: Comfortable viewing in any lighting condition
+- **Economic Analytics**: Track and visualize your nation's economic data
+
+## 🛠 Prerequisites
+
+- Python 3.12+
+- Node.js 18+ (for dashboard)
 - Chrome/Chromium browser
-- Discord bot token and permissions
+- Discord bot token (optional)
 - NationStates.net account
 
-## Installation
-1. Clone the repository
+## 📦 Installation
+
+1. Clone the repository:
 ```bash
 git clone https://github.com/AgnusSOCO/NationStatesBot-Backend.git
 cd NationStatesBot-Backend
 ```
 
-2. Install dependencies
+2. Install Python dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Configure the bot
-- Update Chrome/Chromium path in `config.py`
-- Set up Discord bot token in `main.py`
-- Configure Discord channel ID in `config.py`
+3. Install dashboard dependencies:
+```bash
+cd dashboard/bot-dashboard-ui
+npm install
+```
 
-## Configuration
-Key configuration files:
+## ⚙️ Configuration
 
-### config.py
-- `binary_location`: Path to Chrome/Chromium binary
-- `driver_path`: Path to ChromeDriver
-- `channel_id`: Discord channel for bot notifications
+1. Configure your bot settings in `config.py`:
+```python
+NATION_NAME = "your_nation"
+PASSWORD = "your_password"
+DISCORD_TOKEN = "your_discord_token"  # Optional
+CHROME_PATH = "/path/to/chrome"      # Update with your Chrome binary path
+DRIVER_PATH = "/path/to/chromedriver" # Update with your ChromeDriver path
+CHANNEL_ID = "your_discord_channel"   # For Discord notifications
+```
 
-### main.py
-- `bot_token`: Your Discord bot token
+2. Start the backend server:
+```bash
+cd dashboard/bot-dashboard
+uvicorn app.main:app --reload
+```
 
-## Usage
+3. Start the dashboard:
+```bash
+cd dashboard/bot-dashboard-ui
+npm run dev
+```
+
+## 🎮 Usage
+
 1. Start the bot:
 ```bash
 python main.py
@@ -56,27 +94,48 @@ The bot will then:
 - Log into your NationStates account
 - Monitor for dilemmas
 - Make AI-powered decisions
-- Send updates via Discord
+- Update the dashboard in real-time
 - Track economic data
+- Send optional Discord notifications
 
-## Architecture
-- `main.py`: Entry point and main loop
-- `web_automation.py`: Browser automation and AI decision making
-- `config.py`: Configuration settings
-- `utilities.py`: Helper functions
-- `discord_bot.py`: Discord integration
+## 🏗 Project Architecture
 
-## Security Note
-- Never share your NationStates credentials
-- Keep your Discord bot token private
+```
+NationStatesBot-Backend/
+├── main.py              # Bot entry point and main loop
+├── web_automation.py    # Browser automation and AI decision making
+├── utilities.py         # Helper functions
+├── config.py           # Configuration settings
+├── discord_bot.py      # Discord integration
+├── dashboard/          # Web dashboard
+│   ├── bot-dashboard/  # FastAPI backend
+│   └── bot-dashboard-ui/ # React frontend
+└── tests/             # Test suite
+```
+
+## 🔒 Security Note
+
+- Keep your credentials secure
+- Don't share your config.py
+- Use environment variables for sensitive data
+- Follow NationStates.net ToS
 - Review AI decisions before implementing in production
+- Keep your Discord bot token private
 
-## Contributing
+## 🤝 Contributing
+
 1. Fork the repository
 2. Create a feature branch
 3. Commit your changes
 4. Push to the branch
-5. Create a Pull Request
+5. Open a Pull Request
 
-## License
+## 📄 License
+
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🙏 Acknowledgments
+
+- NationStates.net for the platform
+- The Discord.py community
+- All contributors to this project
