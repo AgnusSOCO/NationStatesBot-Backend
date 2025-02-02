@@ -13,6 +13,7 @@ from g4f.Provider import (
     GetGpt
 )
 from config import browser, wait, bot
+from discord_bot import send_message_to_discord
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys

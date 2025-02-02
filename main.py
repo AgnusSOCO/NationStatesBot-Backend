@@ -1,4 +1,4 @@
-from config import bot, browser
+from config import bot
 from utilities import display_banner, get_user_input, extract_economy_data
 from web_automation import login, answer_dilemma, random_navigation
 import discord_bot
@@ -20,7 +20,6 @@ async def main() -> None:
             await random_navigation()
         except KeyboardInterrupt:
             await bot.close()
-            browser.quit()
             break
 
 if __name__ == "__main__":
