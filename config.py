@@ -101,26 +101,41 @@ def find_chrome_binary():
 def get_browser_version(binary_path):
     import subprocess
     import re
+    import psutil
     
+    # Kill any existing browser processes to ensure clean version check
+    for proc in psutil.process_iter(['pid', 'name']):
+        try:
+            if any(browser in proc.info['name'].lower() 
+                  for browser in ['thorium', 'chrome', 'chromium']):
+                psutil.Process(proc.info['pid']).terminate()
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+            
     try:
-        result = subprocess.check_output([binary_path, '--product-version'], 
-                                      stderr=subprocess.STDOUT,
+        # Try --version first as it's more reliable
+        result = subprocess.check_output([binary_path, '--version'],
+                                      stderr=subprocess.DEVNULL,
+                                      timeout=5)
+        version = result.decode('utf-8')
+        match = re.search(r'(\d+\.\d+\.\d+\.\d+)', version)
+        if match:
+            return match.group(1)
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        pass
+        
+    try:
+        # Fallback to --product-version
+        result = subprocess.check_output([binary_path, '--product-version'],
+                                      stderr=subprocess.DEVNULL,
                                       timeout=5)
         version = result.decode('utf-8').strip()
-        if version:
+        if re.match(r'^\d+\.\d+\.\d+\.\d+$', version):
             return version
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-        try:
-            result = subprocess.check_output([binary_path, '--version'], 
-                                          stderr=subprocess.STDOUT,
-                                          timeout=5)
-            version = result.decode('utf-8')
-            match = re.search(r'(\d+\.\d+\.\d+\.\d+)', version)
-            if match:
-                return match.group(1)
-        except Exception:
-            pass
-    return None
+        pass
+        
+    raise RuntimeError(f"Could not determine version for browser at: {binary_path}")
 
 def create_browser():
     chrome_options = Options()
