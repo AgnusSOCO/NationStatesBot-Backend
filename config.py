@@ -182,16 +182,33 @@ def create_browser() -> webdriver.Chrome:
         logging.info(f"Using ChromeDriver from: {driver_path}")
         
         service = Service(driver_path)
-        browser = webdriver.Chrome(service=service, options=chrome_options)
+        
+        if platform.system() == "Darwin":  # macOS
+            browser = webdriver.Chrome(service=service, options=chrome_options)
+            from selenium_stealth import stealth
+            stealth(
+                browser,
+                languages=["en-US", "en"],
+                vendor="Google Inc.",
+                platform="Win32",
+                webgl_vendor="Intel Inc.",
+                renderer="Intel Iris OpenGL Engine",
+                fix_hairline=True,
+            )
+        else:  # Other platforms
+            import undetected_chromedriver as uc
+            browser = uc.Chrome(
+                driver_executable_path=driver_path,
+                options=chrome_options,
+                version_main=int(major_version)
+            )
+            
         return browser
         
-    except RuntimeError as e:
-        logging.error(f"Browser setup failed: {e}")
-        raise
     except Exception as e:
-        logging.error(f"Unexpected error during browser setup: {e}")
-        if 'chrome not installed' in str(e).lower():
-            logging.error("Please install a supported browser (Thorium, Chrome, or Chromium)")
+        logging.error(f"Browser setup failed: {e}")
+        if platform.system() == "Darwin":
+            logging.error("On macOS, using selenium-stealth for automation")
         raise
 
 browser = create_browser()
