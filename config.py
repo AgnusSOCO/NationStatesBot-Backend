@@ -1,3 +1,10 @@
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
 import discord
 from discord.ext import commands
 from selenium import webdriver
@@ -7,6 +14,33 @@ from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 import tempfile
 import os
+import platform
+from pathlib import Path
+
+def find_chrome_binary():
+    """Find Chrome or Chromium binary path based on platform."""
+    system = platform.system()
+    chrome_paths = {
+        'Darwin': [
+            '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+            '/Applications/Chromium.app/Contents/MacOS/Chromium',
+            '/Applications/Google Chrome Beta.app/Contents/MacOS/Google Chrome Beta'
+        ],
+        'Windows': [
+            r'C:\Program Files\Google\Chrome\Application\chrome.exe',
+            r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe'
+        ],
+        'Linux': [
+            '/usr/bin/google-chrome',
+            '/usr/bin/chromium-browser'
+        ]
+    }
+    
+    for path in chrome_paths.get(system, []):
+        if Path(path).exists():
+            return path
+            
+    raise RuntimeError(f"Could not find Chrome/Chromium binary on {system}. Please install Chrome or Chromium browser.")
 
 def create_browser():
     chrome_options = Options()
@@ -17,13 +51,15 @@ def create_browser():
     chrome_options.add_argument('--window-size=1920,1080')
     
     try:
+        binary_path = find_chrome_binary()
+        chrome_options.binary_location = binary_path
         service = Service(ChromeDriverManager().install())
         browser = webdriver.Chrome(service=service, options=chrome_options)
         return browser
     except Exception as e:
-        print(f"Error setting up ChromeDriver: {e}")
+        logging.error(f"Error setting up ChromeDriver: {e}")
         if 'chrome not installed' in str(e).lower():
-            print("Please install Chrome/Chromium browser first")
+            logging.error("Please install Chrome/Chromium browser first")
         raise
 
 browser = create_browser()
