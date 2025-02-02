@@ -11,7 +11,7 @@ def display_banner():
     print("\nStarting...\n")
 
 # Get user input for nation name and password
-def get_user_input():
+def get_user_input() -> tuple[str, str]:
     print("Login to NationStatesBot")
     nation_name = input("Nation Name: ")
     password = input("Password: ")
