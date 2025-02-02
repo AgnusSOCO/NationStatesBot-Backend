@@ -21,6 +21,8 @@ def create_browser(max_retries=3):
     import subprocess
     import psutil
     import undetected_chromedriver as uc
+    from selenium.webdriver.chrome.service import Service
+    from webdriver_manager.chrome import ChromeDriverManager
     
     for attempt in range(max_retries):
         try:
@@ -28,6 +30,16 @@ def create_browser(max_retries=3):
             
             binary_path = find_chrome_binary()
             print(f"Using browser binary: {binary_path}")
+            
+            browser_version = get_browser_version(binary_path)
+            major_version = browser_version.split('.')[0]
+            print(f"Using browser version {browser_version} (major: {major_version})")
+            
+            # Use the exact version detected from the browser
+            version_components = browser_version.split('.')
+            driver_version = f"{version_components[0]}.0.{version_components[2]}.{version_components[3]}"
+            driver_path = ChromeDriverManager(driver_version=driver_version).install()
+            print(f"Using ChromeDriver from: {driver_path}")
             
             options = uc.ChromeOptions()
             options.binary_location = binary_path
@@ -37,7 +49,7 @@ def create_browser(max_retries=3):
             options.add_argument('--disable-gpu')
             
             print("Creating undetected-chromedriver instance...")
-            browser = uc.Chrome(options=options)
+            browser = uc.Chrome(driver_executable_path=driver_path, options=options, version_main=int(version_components[0]))
             browser.set_page_load_timeout(15)
             browser.implicitly_wait(5)
             
