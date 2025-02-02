@@ -98,6 +98,30 @@ def find_chrome_binary():
     logging.error(error_msg)
     raise RuntimeError(error_msg)
 
+def get_browser_version(binary_path):
+    import subprocess
+    import re
+    
+    try:
+        result = subprocess.check_output([binary_path, '--product-version'], 
+                                      stderr=subprocess.STDOUT,
+                                      timeout=5)
+        version = result.decode('utf-8').strip()
+        if version:
+            return version
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        try:
+            result = subprocess.check_output([binary_path, '--version'], 
+                                          stderr=subprocess.STDOUT,
+                                          timeout=5)
+            version = result.decode('utf-8')
+            match = re.search(r'(\d+\.\d+\.\d+\.\d+)', version)
+            if match:
+                return match.group(1)
+        except Exception:
+            pass
+    return None
+
 def create_browser():
     chrome_options = Options()
     chrome_options.add_argument('--headless=new')
@@ -109,7 +133,15 @@ def create_browser():
     try:
         binary_path = find_chrome_binary()
         chrome_options.binary_location = binary_path
-        service = Service(ChromeDriverManager().install())
+        
+        browser_version = get_browser_version(binary_path)
+        if not browser_version:
+            raise RuntimeError("Could not determine browser version")
+            
+        major_version = browser_version.split('.')[0]
+        logging.info(f"Detected browser version: {browser_version}")
+        
+        service = Service(ChromeDriverManager(version=f"chrome_{major_version}").install())
         browser = webdriver.Chrome(service=service, options=chrome_options)
         return browser
     except Exception as e:
