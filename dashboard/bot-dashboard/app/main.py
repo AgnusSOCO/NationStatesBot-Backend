@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 from typing import List, Optional
-from .models import BotStatus, BotConfig, BotLog, EconomyData
+from .models import BotStatus, BotConfig, BotLog, EconomyData, DilemmaStatistics, BotSettings
 
 app = FastAPI()
 
@@ -85,6 +85,29 @@ async def get_settings():
 @app.post("/api/settings")
 async def update_settings(settings: BotSettings):
     return settings
+
+@app.get("/api/dilemma-stats")
+async def get_dilemma_stats():
+    dilemma_logs = [log for log in bot_logs if log.type == "dilemma"]
+    total = len(dilemma_logs)
+    
+    choices: Dict[str, int] = {}
+    categories: Dict[str, int] = {}
+    
+    for log in dilemma_logs:
+        if match := re.search(r'Choice: (\d+)', log.message):
+            choice = match.group(1)
+            choices[choice] = choices.get(choice, 0) + 1
+            
+        if match := re.search(r'Category: (\w+)', log.message):
+            category = match.group(1)
+            categories[category] = categories.get(category, 0) + 1
+    
+    return DilemmaStatistics(
+        total=total,
+        choices=choices,
+        categories=categories
+    )
 
 @app.get("/healthz")
 async def healthz():

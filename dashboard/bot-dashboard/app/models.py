@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime
 
 class BotStatus(BaseModel):
@@ -28,3 +28,8 @@ class BotSettings(BaseModel):
     navigation_interval: int = 15  # minutes
     max_dilemmas_per_day: int = 10
     preferred_categories: List[str] = ["economy", "military"]
+
+class DilemmaStatistics(BaseModel):
+    total: int
+    choices: Dict[str, int]
+    categories: Dict[str, int]
