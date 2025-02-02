@@ -12,17 +12,18 @@ from discord_bot import send_message_to_discord
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
-import undetected_chromedriver as uc
+from selenium import webdriver
 from time import sleep
 import random
 
 def create_browser(max_retries=3):
-    """Create a new browser instance with undetected-chromedriver."""
+    """Create a new browser instance with platform-specific automation."""
     import subprocess
     import psutil
-    import undetected_chromedriver as uc
     from selenium.webdriver.chrome.service import Service
     from webdriver_manager.chrome import ChromeDriverManager
+    if platform.system() != "Darwin":
+        import undetected_chromedriver as uc
     
     for attempt in range(max_retries):
         try:
@@ -41,15 +42,33 @@ def create_browser(max_retries=3):
             driver_path = ChromeDriverManager(driver_version=driver_version).install()
             print(f"Using ChromeDriver from: {driver_path}")
             
-            options = uc.ChromeOptions()
+            if platform.system() == "Darwin":
+                options = webdriver.ChromeOptions()
+            else:
+                options = uc.ChromeOptions()
             options.binary_location = binary_path
             options.add_argument('--headless=new')
             options.add_argument('--no-sandbox')
             options.add_argument('--disable-dev-shm-usage')
             options.add_argument('--disable-gpu')
             
-            print("Creating undetected-chromedriver instance...")
-            browser = uc.Chrome(driver_executable_path=driver_path, options=options, version_main=int(version_components[0]))
+            if platform.system() == "Darwin":  # macOS
+                print("Creating Chrome instance with selenium-stealth...")
+                browser = webdriver.Chrome(service=Service(driver_path), options=options)
+                from selenium_stealth import stealth
+                stealth(
+                    browser,
+                    languages=["en-US", "en"],
+                    vendor="Google Inc.",
+                    platform="Win32",
+                    webgl_vendor="Intel Inc.",
+                    renderer="Intel Iris OpenGL Engine",
+                    fix_hairline=True,
+                )
+            else:
+                print("Creating undetected-chromedriver instance...")
+                browser = uc.Chrome(driver_executable_path=driver_path, options=options, version_main=int(version_components[0]))
+            
             browser.set_page_load_timeout(15)
             browser.implicitly_wait(5)
             
@@ -81,17 +100,18 @@ def create_browser(max_retries=3):
         print(f"Warning: Failed to kill existing processes: {e}")
     sleep(2)
     
-    options = uc.ChromeOptions()
+    if platform.system() == "Darwin":
+        options = webdriver.ChromeOptions()
+    else:
+        options = uc.ChromeOptions()
     options.add_argument('--window-size=1920,1080')
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
-    # Enhanced stealth mode
     options.add_argument('--disable-blink-features=AutomationControlled')
     options.add_argument('--disable-extensions')
     options.add_argument('--disable-notifications')
     options.add_argument('--disable-popup-blocking')
     options.add_argument('--start-maximized')
-    # Add random user agent
     user_agents = [
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -100,8 +120,22 @@ def create_browser(max_retries=3):
     options.add_argument(f'--user-agent={random.choice(user_agents)}')
     
     try:
-        print("Creating undetected-chromedriver instance...")
-        browser = uc.Chrome(options=options)
+        if platform.system() == "Darwin":
+            print("Creating Chrome instance with selenium-stealth...")
+            browser = webdriver.Chrome(options=options)
+            from selenium_stealth import stealth
+            stealth(
+                browser,
+                languages=["en-US", "en"],
+                vendor="Google Inc.",
+                platform="Win32",
+                webgl_vendor="Intel Inc.",
+                renderer="Intel Iris OpenGL Engine",
+                fix_hairline=True,
+            )
+        else:
+            print("Creating undetected-chromedriver instance...")
+            browser = uc.Chrome(options=options)
         browser.set_page_load_timeout(30)
         browser.implicitly_wait(10)
         
