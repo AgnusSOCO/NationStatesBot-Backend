@@ -146,87 +146,15 @@ def create_browser(max_retries=3):
                 raise
             sleep(3)
             
-        except Exception as e:
-            print(f"Attempt {attempt + 1} failed: {str(e)}")
-            try:
-                if 'browser' in locals():
-                    browser.quit()
-            except:
-                pass
-            
             if attempt == max_retries - 1:
-                print("All attempts to create browser failed")
+                logger.error("All attempts to create browser failed")
                 if 'chrome not installed' in str(e).lower():
-                    print("Please install Chrome/Chromium browser first")
+                    logger.error("Please install Chrome/Chromium browser first")
                 raise
-    
-    # Kill any existing Chrome and ChromeDriver processes
-    try:
-        subprocess.run(['pkill', '-f', 'chrome'], capture_output=True)
-        subprocess.run(['pkill', '-f', 'chromedriver'], capture_output=True)
-    except Exception as e:
-        print(f"Warning: Failed to kill existing processes: {e}")
-    sleep(2)
-    
-    if platform.system() == "Darwin":
-        options = webdriver.ChromeOptions()
-    else:
-        options = uc.ChromeOptions()
-    options.add_argument('--window-size=1920,1080')
-    options.add_argument('--no-sandbox')
-    options.add_argument('--disable-dev-shm-usage')
-    options.add_argument('--disable-blink-features=AutomationControlled')
-    options.add_argument('--disable-extensions')
-    options.add_argument('--disable-notifications')
-    options.add_argument('--disable-popup-blocking')
-    options.add_argument('--start-maximized')
-    user_agents = [
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    ]
-    options.add_argument(f'--user-agent={random.choice(user_agents)}')
-    
-    try:
-        if platform.system() == "Darwin":
-            print("Creating Chrome instance with selenium-stealth...")
-            browser = webdriver.Chrome(options=options)
-            from selenium_stealth import stealth
-            stealth(
-                browser,
-                languages=["en-US", "en"],
-                vendor="Google Inc.",
-                platform="Win32",
-                webgl_vendor="Intel Inc.",
-                renderer="Intel Iris OpenGL Engine",
-                fix_hairline=True,
-            )
-        else:
-            print("Creating undetected-chromedriver instance...")
-            browser = uc.Chrome(options=options)
-        browser.set_page_load_timeout(30)
-        browser.implicitly_wait(10)
-        
-        # Add delay to avoid detection
-        sleep(random.uniform(2, 4))
-        
-        # Test browser with a simple page
-        browser.get('https://www.example.com')
-        logger.info("Browser verified with test page")
-        sleep(random.uniform(1, 2))
-        
-        logger.info("Browser instance created successfully")
-        return browser
-    except Exception as e:
-        logger.error(f"Failed to create browser: {str(e)}")
-        if 'chrome not installed' in str(e).lower():
-            logger.error("Please install Chrome/Chromium browser first")
-        try:
-            if 'browser' in locals():
-                browser.quit()
-        except:
-            pass
-        raise
+            sleep(3)
+            continue
+            
+    raise Exception("Failed to create browser after all retries")
 
 # Initialize browser
 try:
@@ -257,8 +185,7 @@ async def send_log(message: str, type: str = "info") -> None:
     bot_logs.append(log)
     if Config.DISCORD_ENABLED:
         from discord_bot import send_message_to_discord
-        from config import bot
-        await bot.loop.create_task(send_message_to_discord(message))
+        await send_message_to_discord(message)
     else:
         logger.info(f"[{type}] {message}")
 
