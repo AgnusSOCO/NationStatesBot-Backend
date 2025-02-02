@@ -98,31 +98,66 @@ def find_chrome_binary():
     logging.error(error_msg)
     raise RuntimeError(error_msg)
 
-def get_browser_version(binary_path):
+def get_browser_version(binary_path: str) -> str:
     import subprocess
     import re
+    import psutil
     
-    try:
-        result = subprocess.check_output([binary_path, '--product-version'], 
-                                      stderr=subprocess.STDOUT,
-                                      timeout=5)
-        version = result.decode('utf-8').strip()
-        if version:
-            return version
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+    VERSION_PATTERN = r'Version (\d+\.\d+\.\d+\.\d+)|(\d+\.\d+\.\d+\.\d+)'
+    
+    # Kill any existing browser processes
+    for proc in psutil.process_iter(['pid', 'name']):
         try:
-            result = subprocess.check_output([binary_path, '--version'], 
-                                          stderr=subprocess.STDOUT,
-                                          timeout=5)
-            version = result.decode('utf-8')
-            match = re.search(r'(\d+\.\d+\.\d+\.\d+)', version)
-            if match:
-                return match.group(1)
-        except Exception:
-            pass
-    return None
+            if any(browser in proc.info['name'].lower() 
+                  for browser in ['thorium', 'chrome', 'chromium']):
+                psutil.Process(proc.info['pid']).terminate()
+                logging.info(f"Terminated browser process: {proc.info['name']}")
+        except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
+            logging.debug(f"Process handling error: {e}")
+            
+    def extract_version(output: str) -> str:
+        match = re.search(VERSION_PATTERN, output)
+        if match:
+            # Return the first non-None group (either with or without "Version" prefix)
+            return next(g for g in match.groups() if g is not None)
+        return ""
+            
+    try:
+        # Capture both stdout and stderr
+        result = subprocess.run(
+            [binary_path, '--version'],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        
+        # Log the complete output for debugging
+        logging.debug(f"Version command output - stdout: {result.stdout}")
+        logging.debug(f"Version command output - stderr: {result.stderr}")
+        
+        # Check stdout first, then stderr
+        version = extract_version(result.stdout)
+        if not version:
+            version = extract_version(result.stderr)
+            
+        if version:
+            logging.info(f"Detected browser version: {version}")
+            return version
+            
+        raise RuntimeError(f"Could not parse version from output: {result.stdout}\n{result.stderr}")
+            
+    except subprocess.TimeoutExpired:
+        logging.error("Timeout while getting browser version")
+        raise RuntimeError("Browser version check timed out")
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Failed to get browser version: {e}")
+        raise RuntimeError(f"Failed to execute browser version check: {e}")
+    except Exception as e:
+        logging.error(f"Unexpected error getting browser version: {e}")
+        raise RuntimeError(f"Unexpected error during version check: {e}")
 
-def create_browser():
+def create_browser() -> webdriver.Chrome:
+    """Create browser instance with improved error handling."""
     chrome_options = Options()
     chrome_options.add_argument('--headless=new')
     chrome_options.add_argument('--disable-gpu')
@@ -133,22 +168,27 @@ def create_browser():
     try:
         binary_path = find_chrome_binary()
         chrome_options.binary_location = binary_path
+        logging.info(f"Using browser binary at: {binary_path}")
         
         browser_version = get_browser_version(binary_path)
-        if not browser_version:
-            raise RuntimeError("Could not determine browser version")
-            
         major_version = browser_version.split('.')[0]
-        logging.info(f"Detected browser version: {browser_version}")
+        logging.info(f"Using browser version {browser_version} (major: {major_version})")
         
-        # Use driver_version parameter to match ChromeDriver with browser version
-        service = Service(ChromeDriverManager(driver_version=major_version).install())
+        # Download and install ChromeDriver matching the browser version
+        driver_path = ChromeDriverManager(driver_version=major_version).install()
+        logging.info(f"Using ChromeDriver from: {driver_path}")
+        
+        service = Service(driver_path)
         browser = webdriver.Chrome(service=service, options=chrome_options)
         return browser
+        
+    except RuntimeError as e:
+        logging.error(f"Browser setup failed: {e}")
+        raise
     except Exception as e:
-        logging.error(f"Error setting up ChromeDriver: {e}")
+        logging.error(f"Unexpected error during browser setup: {e}")
         if 'chrome not installed' in str(e).lower():
-            logging.error("Please install Chrome/Chromium browser first")
+            logging.error("Please install a supported browser (Thorium, Chrome, or Chromium)")
         raise
 
 browser = create_browser()
