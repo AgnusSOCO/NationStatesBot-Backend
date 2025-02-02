@@ -10,7 +10,7 @@ An automated bot for NationStates.net that uses AI for strategic decision-making
 
 ## 🚀 Features
 
-- **AI-Powered Decision Making**: Utilizes advanced AI models to make strategic decisions for your nation
+- **AI-Powered Decision Making**: Leverages OpenAI's GPT models to make intelligent strategic decisions for your nation
 - **Automated Dilemma Resolution**: Automatically handles nation dilemmas with intelligent choices
 - **Real-Time Dashboard**: Monitor and control your bot through a modern web interface
 - **Activity Logging**: Comprehensive logging of all bot actions and decisions
@@ -32,9 +32,10 @@ The NationStatesBot now includes a modern web dashboard for real-time monitoring
 
 - Python 3.12+
 - Node.js 18+ (for dashboard)
-- Chrome/Chromium browser
-- Discord bot token (optional)
+- Chrome/Chromium browser (will be configured automatically)
+- OpenAI API key (required for AI decision-making)
 - NationStates.net account
+- Discord bot token (optional)
 
 ## 📦 Installation
 
@@ -57,15 +58,20 @@ npm install
 
 ## ⚙️ Configuration
 
-1. Configure your bot settings in `config.py`:
+1. Create a `.env` file in the root directory:
+```env
+OPENAI_API_KEY=your_api_key_here     # Required for AI decision-making
+DISCORD_TOKEN=your_discord_token      # Optional for Discord integration
+```
+
+2. Configure your bot settings in `config.py`:
 ```python
 NATION_NAME = "your_nation"
 PASSWORD = "your_password"
-DISCORD_TOKEN = "your_discord_token"  # Optional
-CHROME_PATH = "/path/to/chrome"      # Update with your Chrome binary path
-DRIVER_PATH = "/path/to/chromedriver" # Update with your ChromeDriver path
-CHANNEL_ID = "your_discord_channel"   # For Discord notifications
+CHANNEL_ID = "your_discord_channel"   # Optional for Discord notifications
 ```
+
+Note: ChromeDriver will be installed and configured automatically.
 
 2. Start the backend server:
 ```bash
