@@ -1,6 +1,13 @@
+import platform
 import g4f
-from g4f.Provider import GetGpt
+from g4f.Provider import GetGpt, You
 from config import wait, bot
+
+def get_ai_provider():
+    """Get the appropriate AI provider based on the platform."""
+    if platform.system() == "Windows":
+        return You  # Browser-based provider for Windows
+    return GetGpt  # Default provider for other platforms
 from discord_bot import send_message_to_discord
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -201,17 +208,31 @@ async def answer_dilemma() -> None:
                        "Based on the information provided, which choice (1, 2, 3, 4, or 5) do you recommend to increase economic growth, military growth, or both? ONLY RESPOND WITH ANSWER e.x 1, 2, 3, 4, 5")
 
         # Send the user prompt to g4f for processing
-        response = g4f.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            provider=g4f.Provider.GetGpt,
-            messages=[
-                {"role": "system", "content": "You are an AI advisor for NationStates.net, focused on maximizing economic and military growth. Analyze each dilemma and choose the option that best benefits the economy, military strength, or both. Respond only with a number (1-5) representing the most advantageous choice."},
-                {"role": "user", "content": prompt_text}
-            ]
-        )
-
-        # Print out the response from g4f
-        print("Response from g4f:", response)
+        try:
+            response = g4f.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                provider=get_ai_provider(),
+                messages=[
+                    {"role": "system", "content": "You are an AI advisor for NationStates.net, focused on maximizing economic and military growth. Analyze each dilemma and choose the option that best benefits the economy, military strength, or both. Respond only with a number (1-5) representing the most advantageous choice."},
+                    {"role": "user", "content": prompt_text}
+                ]
+            )
+            print("Response from g4f:", response)
+        except Exception as e:
+            if platform.system() == "Windows":
+                print(f"Error with Windows provider: {e}")
+                print("Attempting fallback to GetGpt provider...")
+                response = g4f.ChatCompletion.create(
+                    model="gpt-3.5-turbo",
+                    provider=GetGpt,
+                    messages=[
+                        {"role": "system", "content": "You are an AI advisor for NationStates.net, focused on maximizing economic and military growth. Analyze each dilemma and choose the option that best benefits the economy, military strength, or both. Respond only with a number (1-5) representing the most advantageous choice."},
+                        {"role": "user", "content": prompt_text}
+                    ]
+                )
+                print("Fallback response:", response)
+            else:
+                raise
 
         # Extract the choice from the printed g4f response
         match = re.search(r'\b([1-5])\b', response.strip().lower())
