@@ -21,12 +21,34 @@ def create_browser(max_retries=3):
     """Create a new browser instance with platform-specific automation."""
     import subprocess
     import psutil
+    import socket
     from selenium.webdriver.chrome.service import Service
     from webdriver_manager.chrome import ChromeDriverManager
     if platform.system() != "Darwin":
         import undetected_chromedriver as uc
     
+    def find_free_port():
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(('', 0))
+            s.listen(1)
+            port = s.getsockname()[1]
+        return port
+    
+    # Kill any existing browser processes
+    try:
+        for proc in psutil.process_iter(['pid', 'name']):
+            if any(name in proc.info['name'].lower() 
+                  for name in ['chrome', 'chromium', 'thorium', 'chromedriver']):
+                psutil.Process(proc.info['pid']).terminate()
+                logger.info(f"Terminated browser process: {proc.info['name']}")
+    except Exception as e:
+        logger.warning(f"Error cleaning up processes: {e}")
+    
+    sleep(2)  # Wait for processes to clean up
+    
     for attempt in range(max_retries):
+        service = None
+        browser = None
         try:
             logger.info(f"Browser creation attempt {attempt + 1}/{max_retries}")
             
@@ -37,25 +59,38 @@ def create_browser(max_retries=3):
             major_version = browser_version.split('.')[0]
             logger.info(f"Using browser version {browser_version} (major: {major_version})")
             
-            # Use the exact version detected from the browser
-            version_components = browser_version.split('.')
-            driver_version = f"{version_components[0]}.0.{version_components[2]}.{version_components[3]}"
-            driver_path = ChromeDriverManager(driver_version=driver_version).install()
-            print(f"Using ChromeDriver from: {driver_path}")
+            # Use major version for ChromeDriver
+            driver_path = ChromeDriverManager(driver_version=major_version).install()
+            logger.info(f"Using ChromeDriver from: {driver_path}")
             
+            # Configure browser options
             if platform.system() == "Darwin":
                 options = webdriver.ChromeOptions()
             else:
                 options = uc.ChromeOptions()
+                
             options.binary_location = binary_path
             options.add_argument('--headless=new')
             options.add_argument('--no-sandbox')
             options.add_argument('--disable-dev-shm-usage')
             options.add_argument('--disable-gpu')
+            options.add_argument('--disable-extensions')
+            options.add_argument('--disable-notifications')
+            options.add_argument('--disable-popup-blocking')
+            options.add_argument('--window-size=1920,1080')
+            options.add_argument('--disable-blink-features=AutomationControlled')
+            
+            # Use a specific port to avoid conflicts
+            port = find_free_port()
+            service = Service(
+                executable_path=driver_path,
+                port=port,
+                service_args=['--verbose']
+            )
             
             if platform.system() == "Darwin":  # macOS
-                print("Creating Chrome instance with selenium-stealth...")
-                browser = webdriver.Chrome(service=Service(driver_path), options=options)
+                logger.info("Creating Chrome instance with selenium-stealth...")
+                browser = webdriver.Chrome(service=service, options=options)
                 from selenium_stealth import stealth
                 stealth(
                     browser,
@@ -67,17 +102,49 @@ def create_browser(max_retries=3):
                     fix_hairline=True,
                 )
             else:
-                print("Creating undetected-chromedriver instance...")
-                browser = uc.Chrome(driver_executable_path=driver_path, options=options, version_main=int(version_components[0]))
+                logger.info("Creating undetected-chromedriver instance...")
+                browser = uc.Chrome(
+                    driver_executable_path=driver_path,
+                    options=options,
+                    version_main=int(major_version),
+                    service=service
+                )
             
-            browser.set_page_load_timeout(15)
-            browser.implicitly_wait(5)
+            # Configure timeouts
+            browser.set_page_load_timeout(30)
+            browser.implicitly_wait(10)
             
-            logger.info("Testing browser with example.com...")
-            browser.get('https://www.example.com')
-            logger.info("Browser test successful")
-            
-            return browser
+            # Test browser connection
+            max_test_retries = 3
+            for test_attempt in range(max_test_retries):
+                try:
+                    logger.info(f"Testing browser connection (attempt {test_attempt + 1})...")
+                    browser.get('https://www.example.com')
+                    # Force a command to verify connection
+                    browser.title
+                    logger.info("Browser connection verified")
+                    return browser
+                except Exception as test_e:
+                    if test_attempt == max_test_retries - 1:
+                        raise
+                    logger.warning(f"Browser test failed: {test_e}")
+                    sleep(2)
+                    
+        except Exception as e:
+            logger.error(f"Browser creation failed: {e}")
+            if browser:
+                try:
+                    browser.quit()
+                except:
+                    pass
+            if service:
+                try:
+                    service.stop()
+                except:
+                    pass
+            if attempt == max_retries - 1:
+                raise
+            sleep(3)
             
         except Exception as e:
             print(f"Attempt {attempt + 1} failed: {str(e)}")
