@@ -1,6 +1,5 @@
-import g4f
-from g4f.Provider import GetGpt
-from config import wait, bot
+from openai import OpenAI
+from config import wait, bot, OPENAI_API_KEY, MODEL_NAME
 from discord_bot import send_message_to_discord
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -200,18 +199,19 @@ async def answer_dilemma() -> None:
                        "Choices:\n" + '\n'.join([f"{i+1}. {choice}" for i, choice in enumerate(choices)]) + "\n"
                        "Based on the information provided, which choice (1, 2, 3, 4, or 5) do you recommend to increase economic growth, military growth, or both? ONLY RESPOND WITH ANSWER e.x 1, 2, 3, 4, 5")
 
-        # Send the user prompt to g4f for processing
-        response = g4f.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            provider=g4f.Provider.GetGpt,
+        # Send the user prompt to OpenAI for processing
+        client = OpenAI(api_key=OPENAI_API_KEY)
+        response = client.chat.completions.create(
+            model=MODEL_NAME,
             messages=[
                 {"role": "system", "content": "You are an AI advisor for NationStates.net, focused on maximizing economic and military growth. Analyze each dilemma and choose the option that best benefits the economy, military strength, or both. Respond only with a number (1-5) representing the most advantageous choice."},
                 {"role": "user", "content": prompt_text}
             ]
         )
 
-        # Print out the response from g4f
-        print("Response from g4f:", response)
+        # Get the response from OpenAI
+        choice = response.choices[0].message.content.strip()
+        print("AI response:", choice)
 
         # Extract the choice from the printed g4f response
         match = re.search(r'\b([1-5])\b', response.strip().lower())
