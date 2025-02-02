@@ -141,7 +141,8 @@ def create_browser():
         major_version = browser_version.split('.')[0]
         logging.info(f"Detected browser version: {browser_version}")
         
-        service = Service(ChromeDriverManager(version=f"chrome_{major_version}").install())
+        # Use driver_version parameter to match ChromeDriver with browser version
+        service = Service(ChromeDriverManager(driver_version=major_version).install())
         browser = webdriver.Chrome(service=service, options=chrome_options)
         return browser
     except Exception as e:
