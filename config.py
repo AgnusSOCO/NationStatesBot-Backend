@@ -98,6 +98,32 @@ def find_chrome_binary():
     logging.error(error_msg)
     raise RuntimeError(error_msg)
 
+def get_browser_version(binary_path):
+    import subprocess
+    import re
+    
+    try:
+        if platform.system() == 'Windows':
+            import winreg
+            try:
+                key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe")
+                chrome_path = winreg.QueryValue(key, None)
+                winreg.CloseKey(key)
+                result = subprocess.check_output([chrome_path, '--version'], stderr=subprocess.STDOUT)
+            except WindowsError:
+                result = subprocess.check_output([binary_path, '--version'], stderr=subprocess.STDOUT)
+        else:
+            result = subprocess.check_output([binary_path, '--version'], stderr=subprocess.STDOUT)
+        
+        version = result.decode('utf-8')
+        match = re.search(r'(\d+\.\d+\.\d+\.\d+)', version)
+        if match:
+            return match.group(1)
+        return None
+    except Exception as e:
+        logging.error(f"Error getting browser version: {e}")
+        return None
+
 def create_browser():
     chrome_options = Options()
     chrome_options.add_argument('--headless=new')
@@ -109,7 +135,15 @@ def create_browser():
     try:
         binary_path = find_chrome_binary()
         chrome_options.binary_location = binary_path
-        service = Service(ChromeDriverManager().install())
+        
+        browser_version = get_browser_version(binary_path)
+        if not browser_version:
+            raise RuntimeError("Could not determine browser version")
+            
+        major_version = browser_version.split('.')[0]
+        logging.info(f"Detected browser version: {browser_version}")
+        
+        service = Service(ChromeDriverManager(version=major_version).install())
         browser = webdriver.Chrome(service=service, options=chrome_options)
         return browser
     except Exception as e:
