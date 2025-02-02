@@ -8,8 +8,9 @@ Before starting, ensure you have:
 
 - Python 3.12+
 - Node.js 18+
-- Chrome/Chromium browser
+- Chrome/Chromium browser (will be configured automatically)
 - Git
+- OpenAI API key (required for AI decision making)
 - Discord bot token (optional)
 
 ## Local Development Setup
@@ -34,15 +35,20 @@ pip install -r requirements.txt
 ```
 
 #### Configure the Bot
-Create a `config.py` file:
+1. Create a `.env` file in the root directory with your OpenAI API key and optional Discord token:
+```env
+OPENAI_API_KEY=your_api_key_here
+DISCORD_TOKEN=your_discord_token  # Optional
+```
+
+2. Configure your bot settings:
 ```python
 NATION_NAME = "your_nation"
 PASSWORD = "your_password"
-DISCORD_TOKEN = "your_discord_token"  # Optional
-CHROME_PATH = "/path/to/chrome"
-DRIVER_PATH = "/path/to/chromedriver"
-CHANNEL_ID = "your_discord_channel"  # Optional
+CHANNEL_ID = "your_discord_channel"  # Optional for Discord
 ```
+
+Note: ChromeDriver will be installed and configured automatically.
 
 ### 3. Dashboard Setup
 
@@ -88,6 +94,13 @@ The application will be available at:
 - API Documentation: http://localhost:8001/docs
 
 ## Environment Variables
+
+### Bot Configuration (.env)
+Create a `.env` file in the root directory:
+```env
+OPENAI_API_KEY=your_api_key_here  # Required for AI-powered decision making
+DISCORD_TOKEN=your_discord_token   # Optional: for Discord integration
+```
 
 ### Frontend (.env)
 Create a `.env` file in `dashboard/bot-dashboard-ui`:
