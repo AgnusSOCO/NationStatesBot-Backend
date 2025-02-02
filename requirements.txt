@@ -18,7 +18,8 @@ exceptiongroup>=1.1.3
 Flask>=2.3.3
 Flask-Cors>=4.0.0
 frozenlist>=1.4.0
-g4f==0.1.9.3
+g4f==0.1.9.3; platform_system == "Windows"  # Latest version with You provider
+g4f>=0.1.9.3; platform_system != "Windows"  # Default version for other platforms
 h11>=0.14.0
 idna>=3.4
 itsdangerous>=2.1.2

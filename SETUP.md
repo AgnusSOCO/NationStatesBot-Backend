@@ -22,6 +22,12 @@ cd NationStatesBot-Backend
 
 ### 2. Bot Setup
 
+#### Windows-Specific Notes
+- Install Python 3.12+ from python.org (not Microsoft Store version)
+- Use `.\venv\Scripts\activate` instead of `source venv/bin/activate`
+- The bot will automatically handle ChromeDriver installation
+- Browser-based AI provider will be used with automatic fallback
+
 #### Create Python Virtual Environment
 ```bash
 python -m venv venv
@@ -34,15 +40,14 @@ pip install -r requirements.txt
 ```
 
 #### Configure the Bot
-Create a `config.py` file:
-```python
-NATION_NAME = "your_nation"
-PASSWORD = "your_password"
-DISCORD_TOKEN = "your_discord_token"  # Optional
-CHROME_PATH = "/path/to/chrome"
-DRIVER_PATH = "/path/to/chromedriver"
-CHANNEL_ID = "your_discord_channel"  # Optional
+Create a `.env` file in the root directory:
+```env
+NATION_NAME=your_nation
+PASSWORD=your_password
+DISCORD_TOKEN=your_discord_token  # Optional
 ```
+
+Note: ChromeDriver will be installed and configured automatically. For Windows users, the bot will use a browser-based AI provider with automatic fallback to other providers if needed.
 
 ### 3. Dashboard Setup
 
