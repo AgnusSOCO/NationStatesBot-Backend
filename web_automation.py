@@ -1,7 +1,7 @@
 import platform
 import g4f
 from g4f.Provider import GetGpt, You
-from config import wait, bot
+from config import wait, bot, find_chrome_binary, get_browser_version
 
 def get_ai_provider():
     """Get the appropriate AI provider based on the platform."""
@@ -26,7 +26,11 @@ def create_browser(max_retries=3):
         try:
             print(f"Browser creation attempt {attempt + 1}/{max_retries}")
             
+            binary_path = find_chrome_binary()
+            print(f"Using browser binary: {binary_path}")
+            
             options = uc.ChromeOptions()
+            options.binary_location = binary_path
             options.add_argument('--headless=new')
             options.add_argument('--no-sandbox')
             options.add_argument('--disable-dev-shm-usage')
