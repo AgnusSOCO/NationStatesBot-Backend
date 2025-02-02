@@ -42,12 +42,18 @@ pip install -r requirements.txt
 #### Configure the Bot
 Create a `.env` file in the root directory:
 ```env
+# Required settings
 NATION_NAME=your_nation
 PASSWORD=your_password
-DISCORD_TOKEN=your_discord_token  # Optional
+
+# Optional Discord integration (remove if not using Discord)
+DISCORD_TOKEN=your_discord_token
+DISCORD_CHANNEL_ID=your_channel_id
 ```
 
-Note: ChromeDriver will be installed and configured automatically. For Windows users, the bot will use a browser-based AI provider with automatic fallback to other providers if needed.
+Note: 
+- Discord integration is completely optional. The bot can run without Discord and will use console logging instead.
+- ChromeDriver will be installed and configured automatically. For Windows users, the bot will use a browser-based AI provider with automatic fallback to other providers if needed.
 
 ### 3. Dashboard Setup
 

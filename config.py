@@ -1,15 +1,19 @@
 import logging
 from typing import Optional
+import os
 
-__all__ = ['wait', 'bot', 'find_chrome_binary', 'get_browser_version']
+__all__ = ['wait', 'find_chrome_binary', 'get_browser_version', 'Config', 'logger']
 
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
+logger = logging.getLogger(__name__)
 
-import discord
-from discord.ext import commands
+class Config:
+    DISCORD_ENABLED: bool = False
+    DISCORD_TOKEN: Optional[str] = None
+    DISCORD_CHANNEL_ID: Optional[int] = None
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.chrome.service import Service
@@ -213,11 +217,12 @@ def create_browser() -> webdriver.Chrome:
 
 browser = create_browser()
 
-# Discord bot setup
-intents = discord.Intents.default()
-intents.message_content = True
-bot = commands.Bot(command_prefix='!', intents=intents)
-channel_id = 1141581196745257010  # Replace with your Discord channel ID
-
 # Initialize WebDriverWait
 wait = WebDriverWait(browser, 10)
+
+# Load Discord configuration if enabled
+if os.getenv('DISCORD_TOKEN'):
+    Config.DISCORD_ENABLED = True
+    Config.DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
+    Config.DISCORD_CHANNEL_ID = int(os.getenv('DISCORD_CHANNEL_ID', '0'))
+    logger.info("Discord integration enabled")

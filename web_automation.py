@@ -1,15 +1,16 @@
 import platform
 import g4f
 from g4f.Provider import GetGpt, You
-from config import wait, bot, find_chrome_binary, get_browser_version
+from config import wait, find_chrome_binary, get_browser_version, Config, logger
+from typing import Dict, Any, List
+from datetime import datetime
+from selenium.webdriver.common.by import By
 
 def get_ai_provider():
     """Get the appropriate AI provider based on the platform."""
     if platform.system() == "Windows":
         return You  # Browser-based provider for Windows
     return GetGpt  # Default provider for other platforms
-from discord_bot import send_message_to_discord
-from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from selenium import webdriver
@@ -27,14 +28,14 @@ def create_browser(max_retries=3):
     
     for attempt in range(max_retries):
         try:
-            print(f"Browser creation attempt {attempt + 1}/{max_retries}")
+            logger.info(f"Browser creation attempt {attempt + 1}/{max_retries}")
             
             binary_path = find_chrome_binary()
-            print(f"Using browser binary: {binary_path}")
+            logger.info(f"Using browser binary: {binary_path}")
             
             browser_version = get_browser_version(binary_path)
             major_version = browser_version.split('.')[0]
-            print(f"Using browser version {browser_version} (major: {major_version})")
+            logger.info(f"Using browser version {browser_version} (major: {major_version})")
             
             # Use the exact version detected from the browser
             version_components = browser_version.split('.')
@@ -72,9 +73,9 @@ def create_browser(max_retries=3):
             browser.set_page_load_timeout(15)
             browser.implicitly_wait(5)
             
-            print("Testing browser with example.com...")
+            logger.info("Testing browser with example.com...")
             browser.get('https://www.example.com')
-            print("Browser test successful")
+            logger.info("Browser test successful")
             
             return browser
             
@@ -144,15 +145,15 @@ def create_browser(max_retries=3):
         
         # Test browser with a simple page
         browser.get('https://www.example.com')
-        print("Browser verified with test page")
+        logger.info("Browser verified with test page")
         sleep(random.uniform(1, 2))
         
-        print("Browser instance created successfully")
+        logger.info("Browser instance created successfully")
         return browser
     except Exception as e:
-        print(f"Failed to create browser: {str(e)}")
+        logger.error(f"Failed to create browser: {str(e)}")
         if 'chrome not installed' in str(e).lower():
-            print("Please install Chrome/Chromium browser first")
+            logger.error("Please install Chrome/Chromium browser first")
         try:
             if 'browser' in locals():
                 browser.quit()
@@ -165,9 +166,9 @@ try:
     browser = create_browser()
 except Exception as e:
     error_msg = f"Failed to initialize ChromeDriver: {str(e)}"
-    print(error_msg)  # For local debugging
+    logger.error(error_msg)  # For local debugging
     if 'chrome not installed' in str(e).lower():
-        print("Please install Chrome/Chromium browser first")
+        logger.error("Please install Chrome/Chromium browser first")
     raise Exception(error_msg)
 import random
 import asyncio
@@ -178,7 +179,7 @@ from datetime import datetime
 from typing import List
 
 # In-memory storage for logs
-bot_logs: List[dict] = []
+bot_logs: List[Dict[str, Any]] = []
 
 async def send_log(message: str, type: str = "info") -> None:
     log = {
@@ -187,41 +188,45 @@ async def send_log(message: str, type: str = "info") -> None:
         "type": type
     }
     bot_logs.append(log)
-    # Still send to Discord for backward compatibility
-    await bot.loop.create_task(send_message_to_discord(message))
+    if Config.DISCORD_ENABLED:
+        from discord_bot import send_message_to_discord
+        from config import bot
+        await bot.loop.create_task(send_message_to_discord(message))
+    else:
+        logger.info(f"[{type}] {message}")
 
 def login(nation_name: str, password: str) -> None:
     try:
-        print("Initializing browser session...")
+        logger.info("Initializing browser session...")
         browser.get("https://www.nationstates.net")
         
         # Wait a bit before navigating to login
         sleep(3)
         
-        print("Navigating to login page...")
+        logger.info("Navigating to login page...")
         browser.get("https://www.nationstates.net/page=login")
         sleep(2)  # Let the page settle
         
-        print("Waiting for login form...")
+        logger.info("Waiting for login form...")
         nation_input = wait.until(EC.presence_of_element_located((By.NAME, "nation")))
         password_input = wait.until(EC.presence_of_element_located((By.NAME, "password")))
         
         # Add random delays between actions
         sleep(random.uniform(0.5, 1.5))
         
-        print("Entering credentials...")
+        logger.info("Entering credentials...")
         nation_input.send_keys(nation_name)
         sleep(random.uniform(0.3, 0.7))
         password_input.send_keys(password)
         
-        print("Attempting login...")
+        logger.info("Attempting login...")
         login_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@type='submit'][contains(text(), 'Login')]")))
         sleep(random.uniform(0.5, 1.0))
         login_button.click()
         
-        print("Verifying login...")
+        logger.info("Verifying login...")
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "STANDOUT")))
-        print("Login successful!")
+        logger.info("Login successful!")
     except Exception as e:
         print(f"Login failed: {str(e)}")
         print("Current URL:", browser.current_url)
@@ -267,11 +272,11 @@ async def answer_dilemma() -> None:
                     {"role": "user", "content": prompt_text}
                 ]
             )
-            print("Response from g4f:", response)
+            logger.info(f"Response from g4f: {response}")
         except Exception as e:
             if platform.system() == "Windows":
-                print(f"Error with Windows provider: {e}")
-                print("Attempting fallback to GetGpt provider...")
+                logger.error(f"Error with Windows provider: {e}")
+                logger.info("Attempting fallback to GetGpt provider...")
                 response = g4f.ChatCompletion.create(
                     model="gpt-3.5-turbo",
                     provider=GetGpt,
@@ -280,7 +285,7 @@ async def answer_dilemma() -> None:
                         {"role": "user", "content": prompt_text}
                     ]
                 )
-                print("Fallback response:", response)
+                logger.info(f"Fallback response: {response}")
             else:
                 raise
 
