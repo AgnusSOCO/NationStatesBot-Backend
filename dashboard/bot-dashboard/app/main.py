@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from datetime import datetime
-from typing import List, Optional
+from datetime import datetime, timedelta
+from typing import List, Optional, Dict
+import re
+import random
 from .models import BotStatus, BotConfig, BotLog, EconomyData, DilemmaStatistics, BotSettings
 
 app = FastAPI()
@@ -65,17 +67,13 @@ async def update_config(config: BotConfig):
 
 @app.get("/api/economy")
 async def get_economy_data():
+    # Generate sample data for testing
     data = []
-    try:
-        with open("economy_data.txt", "r") as file:
-            for line in file:
-                nation, value = line.strip().split(": ")
-                data.append(EconomyData(
-                    timestamp=datetime.now(),
-                    value=float(value)
-                ))
-    except FileNotFoundError:
-        pass
+    for i in range(10):
+        data.append(EconomyData(
+            timestamp=datetime.now() - timedelta(days=i),
+            value=1000 + i * 100 + random.randint(-50, 50)
+        ))
     return data
 
 @app.get("/api/settings")
@@ -88,23 +86,16 @@ async def update_settings(settings: BotSettings):
 
 @app.get("/api/dilemma-stats")
 async def get_dilemma_stats():
-    dilemma_logs = [log for log in bot_logs if log.type == "dilemma"]
-    total = len(dilemma_logs)
-    
-    choices: Dict[str, int] = {}
-    categories: Dict[str, int] = {}
-    
-    for log in dilemma_logs:
-        if match := re.search(r'Choice: (\d+)', log.message):
-            choice = match.group(1)
-            choices[choice] = choices.get(choice, 0) + 1
-            
-        if match := re.search(r'Category: (\w+)', log.message):
-            category = match.group(1)
-            categories[category] = categories.get(category, 0) + 1
-    
+    # Generate sample dilemma data for testing
+    choices = {"1": 5, "2": 3, "3": 2}
+    categories = {
+        "economy": 4,
+        "military": 3,
+        "social": 2,
+        "environment": 1
+    }
     return DilemmaStatistics(
-        total=total,
+        total=10,
         choices=choices,
         categories=categories
     )

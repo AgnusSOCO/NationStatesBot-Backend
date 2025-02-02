@@ -1,4 +1,4 @@
-import React from 'react'
+
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 

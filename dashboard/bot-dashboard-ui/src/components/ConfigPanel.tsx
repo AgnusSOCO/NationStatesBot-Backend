@@ -23,7 +23,7 @@ export function ConfigPanel({ settings, onUpdate }: ConfigPanelProps) {
       <CardHeader>
         <CardTitle>Bot Configuration</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 p-6">
         <div className="flex items-center justify-between">
           <Label htmlFor="auto-answer">Auto Answer Dilemmas</Label>
           <Switch
@@ -36,28 +36,38 @@ export function ConfigPanel({ settings, onUpdate }: ConfigPanelProps) {
         </div>
 
         <div className="space-y-2">
-          <Label>Navigation Interval (minutes)</Label>
-          <Slider
-            value={[settings.navigation_interval]}
-            onValueChange={([value]) => 
-              onUpdate({ ...settings, navigation_interval: value })
+          <div className="flex justify-between items-center">
+            <Label>Navigation Interval (minutes)</Label>
+            <span className="text-sm text-gray-500">{settings.navigation_interval} min</span>
+          </div>
+          <input
+            type="range"
+            min="5"
+            max="60"
+            step="5"
+            value={settings.navigation_interval}
+            onChange={(e) => 
+              onUpdate({ ...settings, navigation_interval: parseInt(e.target.value) })
             }
-            min={5}
-            max={60}
-            step={5}
+            className="w-full"
           />
         </div>
 
         <div className="space-y-2">
-          <Label>Max Dilemmas Per Day</Label>
-          <Slider
-            value={[settings.max_dilemmas_per_day]}
-            onValueChange={([value]) => 
-              onUpdate({ ...settings, max_dilemmas_per_day: value })
+          <div className="flex justify-between items-center">
+            <Label>Max Dilemmas Per Day</Label>
+            <span className="text-sm text-gray-500">{settings.max_dilemmas_per_day}</span>
+          </div>
+          <input
+            type="range"
+            min="1"
+            max="20"
+            step="1"
+            value={settings.max_dilemmas_per_day}
+            onChange={(e) => 
+              onUpdate({ ...settings, max_dilemmas_per_day: parseInt(e.target.value) })
             }
-            min={1}
-            max={20}
-            step={1}
+            className="w-full"
           />
         </div>
 
