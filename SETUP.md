@@ -8,9 +8,17 @@ Before starting, ensure you have:
 
 - Python 3.12+
 - Node.js 18+
-- Chrome/Chromium browser
+- Chrome/Chromium browser (ChromeDriver will be installed automatically)
 - Git
 - Discord bot token (optional)
+
+### Windows-Specific Requirements
+
+If you're on Windows:
+1. Install Python from the official Python website instead of the Microsoft Store
+2. Use a regular command prompt or PowerShell instead of Windows Terminal
+3. Install Visual Studio Build Tools with C++ development tools if prompted
+4. Run PowerShell or Command Prompt as Administrator when installing packages
 
 ## Local Development Setup
 
@@ -39,8 +47,6 @@ Create a `config.py` file:
 NATION_NAME = "your_nation"
 PASSWORD = "your_password"
 DISCORD_TOKEN = "your_discord_token"  # Optional
-CHROME_PATH = "/path/to/chrome"
-DRIVER_PATH = "/path/to/chromedriver"
 CHANNEL_ID = "your_discord_channel"  # Optional
 ```
 
@@ -127,10 +133,34 @@ npm run build
 
 ## Common Issues & Troubleshooting
 
+### Installation Issues
+
+#### Windows-Specific Issues
+1. Python Installation Problems:
+   - If you see "Invalid argument" errors with python.exe path:
+     ```
+     OSError: [Errno 22] Invalid argument: 'C:\Users\...\WindowsApps\Python.3.12...'
+     ```
+   - Solution: Uninstall Microsoft Store Python and install from python.org
+   - During installation, check "Add Python to PATH"
+   - Restart your computer after installation
+
+2. Package Build Errors:
+   - If you see "error: subprocess-exited-with-error" during pip install:
+     - Install Visual Studio Build Tools with C++ development tools
+     - Run pip commands as Administrator
+     - Try `pip install --upgrade pip` before installing requirements
+     - Use `pip install -r requirements.txt --no-cache-dir`
+
+3. Chrome/ChromeDriver Issues:
+   - Install Chrome from official website
+   - ChromeDriver will be installed automatically
+   - If you see WebDriver errors, try running as Administrator
+
 ### Bot Issues
-- Ensure Chrome/Chromium and ChromeDriver versions match
 - Verify NationStates.net credentials
 - Check network connectivity
+- Ensure Chrome/Chromium is installed
 
 ### Dashboard Issues
 - Verify API URL in frontend .env file
