@@ -23,7 +23,7 @@ from bs4 import BeautifulSoup
 import re 
 from time import sleep
 
-def login(nation_name, password):
+def login(nation_name: str, password: str) -> None:
     # Navigate to the login page
     browser.get("https://www.nationstates.net/page=login")
     nation_input = wait.until(EC.presence_of_element_located((By.NAME, "nation")))
@@ -34,7 +34,7 @@ def login(nation_name, password):
     browser.execute_script("arguments[0].click();", login_button)
 
 
-async def answer_dilemma():
+async def answer_dilemma() -> None:
     try:
         # Navigate to the dilemmas page
         browser.get("https://www.nationstates.net/page=dilemmas")
@@ -45,9 +45,17 @@ async def answer_dilemma():
 
         dilemmas[0].click()
         soup = BeautifulSoup(browser.page_source, 'html.parser')
-        issue_title = soup.select_one(".dpaper4 p").text.strip()
-        issue_description = soup.select_one(".dilemma h5 + p").text.strip()
-        choices = [choice.text.strip() for choice in soup.select(".diloptions li p")]
+        
+        title_elem = soup.select_one(".dpaper4 p")
+        desc_elem = soup.select_one(".dilemma h5 + p")
+        
+        if not title_elem or not desc_elem:
+            bot.loop.create_task(send_message_to_discord("Error: Could not find dilemma content"))
+            return
+            
+        issue_title = title_elem.text.strip()
+        issue_description = desc_elem.text.strip()
+        choices = [choice.text.strip() for choice in soup.select(".diloptions li p") if choice]
         prompt_text = ("Issue Title: " + issue_title + "\n"
                        "Issue Description: " + issue_description + "\n"
                        "Choices:\n" + '\n'.join([f"{i+1}. {choice}" for i, choice in enumerate(choices)]) + "\n"
@@ -84,7 +92,7 @@ async def answer_dilemma():
     except Exception as e:
         bot.loop.create_task(send_message_to_discord(f"Error while answering dilemma: {str(e)}"))
 
-async def random_navigation():
+async def random_navigation() -> None:
     bot.loop.create_task(send_message_to_discord(f"Starting Random Navigation -- (MIMICS HUMAN ACTION 🧬)"))
     random_links = [
         "https://www.nationstates.net/page=world",
