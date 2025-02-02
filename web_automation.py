@@ -13,7 +13,6 @@ from g4f.Provider import (
     GetGpt
 )
 from config import browser, wait, bot
-from discord_bot import send_message_to_discord
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
@@ -22,6 +21,21 @@ import asyncio
 from bs4 import BeautifulSoup
 import re 
 from time import sleep
+from datetime import datetime
+from typing import List
+
+# In-memory storage for logs
+bot_logs: List[dict] = []
+
+async def send_log(message: str, type: str = "info") -> None:
+    log = {
+        "timestamp": datetime.now().isoformat(),
+        "message": message,
+        "type": type
+    }
+    bot_logs.append(log)
+    # Still send to Discord for backward compatibility
+    await bot.loop.create_task(send_message_to_discord(message))
 
 def login(nation_name: str, password: str) -> None:
     # Navigate to the login page
@@ -40,7 +54,7 @@ async def answer_dilemma() -> None:
         browser.get("https://www.nationstates.net/page=dilemmas")
         dilemmas = browser.find_elements(By.CSS_SELECTOR, "ul.dilemmalist li a")
         if not dilemmas:
-            bot.loop.create_task(send_message_to_discord("Sorry 😥 Couldn't Find Any Dilemmas - 🔎..."))
+            await send_log("No dilemmas found", "info")
             return
 
         dilemmas[0].click()
@@ -50,7 +64,7 @@ async def answer_dilemma() -> None:
         desc_elem = soup.select_one(".dilemma h5 + p")
         
         if not title_elem or not desc_elem:
-            bot.loop.create_task(send_message_to_discord("Error: Could not find dilemma content"))
+            await send_log("Could not find dilemma content", "error")
             return
             
         issue_title = title_elem.text.strip()
@@ -85,15 +99,15 @@ async def answer_dilemma() -> None:
             # Check if the choice_index is within the range of available choices
             if 0 <= choice_index < len(choice_buttons):
                 choice_buttons[choice_index].click()
-                bot.loop.create_task(send_message_to_discord(f"Dilemma Resolved ☑️ - CHOICE: ➡️ {selected_choice_number}"))
+                await send_log(f"Dilemma resolved - Choice: {selected_choice_number}", "dilemma")
             else:
-                bot.loop.create_task(send_message_to_discord(f"Error {selected_choice_number} **LLM ERROR IGNORE**"))
+                await send_log(f"Invalid choice number: {selected_choice_number}", "error")
 
     except Exception as e:
-        bot.loop.create_task(send_message_to_discord(f"Error while answering dilemma: {str(e)}"))
+        await send_log(f"Error while answering dilemma: {str(e)}", "error")
 
 async def random_navigation() -> None:
-    bot.loop.create_task(send_message_to_discord(f"Starting Random Navigation -- (MIMICS HUMAN ACTION 🧬)"))
+    await send_log("Starting random navigation", "navigation")
     random_links = [
         "https://www.nationstates.net/page=world",
         "https://www.nationstates.net/page=dispatches",
