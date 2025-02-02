@@ -22,3 +22,9 @@ class BotLog(BaseModel):
 class EconomyData(BaseModel):
     timestamp: datetime
     value: float
+
+class BotSettings(BaseModel):
+    auto_answer_dilemmas: bool = True
+    navigation_interval: int = 15  # minutes
+    max_dilemmas_per_day: int = 10
+    preferred_categories: List[str] = ["economy", "military"]

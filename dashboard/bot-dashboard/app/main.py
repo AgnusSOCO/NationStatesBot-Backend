@@ -78,6 +78,14 @@ async def get_economy_data():
         pass
     return data
 
+@app.get("/api/settings")
+async def get_settings():
+    return BotSettings()
+
+@app.post("/api/settings")
+async def update_settings(settings: BotSettings):
+    return settings
+
 @app.get("/healthz")
 async def healthz():
     return {"status": "ok"}

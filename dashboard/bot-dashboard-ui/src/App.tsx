@@ -3,6 +3,14 @@ import { Button } from './components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from './components/ui/card'
 import { Play, Square } from 'lucide-react'
 import { EconomyChart } from './components/EconomyChart'
+import { ConfigPanel } from './components/ConfigPanel'
+
+interface BotSettings {
+  auto_answer_dilemmas: boolean
+  navigation_interval: number
+  max_dilemmas_per_day: number
+  preferred_categories: string[]
+}
 
 interface EconomyData {
   timestamp: string
@@ -26,6 +34,12 @@ function App() {
   const [status, setStatus] = useState<BotStatus>()
   const [logs, setLogs] = useState<BotLog[]>([])
   const [economyData, setEconomyData] = useState<EconomyData[]>([])
+  const [settings, setSettings] = useState<BotSettings>({
+    auto_answer_dilemmas: true,
+    navigation_interval: 15,
+    max_dilemmas_per_day: 10,
+    preferred_categories: ["economy", "military"]
+  })
   
   useEffect(() => {
     const fetchData = async () => {
@@ -33,9 +47,11 @@ function App() {
         const status = await fetch('http://localhost:8000/api/status').then(r => r.json())
         const logs = await fetch('http://localhost:8000/api/logs').then(r => r.json())
         const economy = await fetch('http://localhost:8000/api/economy').then(r => r.json())
+        const settings = await fetch('http://localhost:8000/api/settings').then(r => r.json())
         setStatus(status)
         setLogs(logs)
         setEconomyData(economy)
+        setSettings(settings)
       } catch (error) {
         console.error('Failed to fetch data:', error)
       }
@@ -109,8 +125,20 @@ function App() {
         </CardContent>
       </Card>
       
-      <div className="mt-4">
+      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
         <EconomyChart data={economyData} />
+        <ConfigPanel 
+          settings={settings} 
+          onUpdate={async (newSettings) => {
+            const response = await fetch('http://localhost:8000/api/settings', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(newSettings)
+            })
+            const updatedSettings = await response.json()
+            setSettings(updatedSettings)
+          }} 
+        />
       </div>
     </div>
   )
