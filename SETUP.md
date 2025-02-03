@@ -22,6 +22,13 @@ cd NationStatesBot-Backend
 
 ### 2. Bot Setup
 
+#### Ubuntu/Linux-Specific Notes
+- Install required system packages:
+```bash
+sudo apt-get update
+sudo apt-get install -y python3-dev python3-setuptools build-essential
+```
+
 #### Windows-Specific Notes
 - Install Python 3.12+ from python.org (not Microsoft Store version)
 - Use `.\venv\Scripts\activate` instead of `source venv/bin/activate`
