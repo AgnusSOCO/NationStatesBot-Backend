@@ -1,5 +1,5 @@
 import logging
-from typing import Optional
+from typing import Optional, List
 import os
 
 __all__ = ['wait', 'find_chrome_binary', 'get_browser_version', 'Config', 'logger']
@@ -14,6 +14,16 @@ class Config:
     DISCORD_ENABLED: bool = False
     DISCORD_TOKEN: Optional[str] = None
     DISCORD_CHANNEL_ID: Optional[int] = None
+    HEADLESS_MODE: bool = os.getenv('HEADLESS', 'false').lower() == 'true'
+    CLOUDFLARE_TIMEOUT: int = int(os.getenv('CLOUDFLARE_TIMEOUT', '300'))
+    
+    # Browser configuration
+    BROWSER_WINDOW_SIZE: str = '1920,1080'
+    BROWSER_USER_AGENTS: List[str] = [
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    ]
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.chrome.service import Service
