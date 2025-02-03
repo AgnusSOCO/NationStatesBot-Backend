@@ -4,6 +4,7 @@ from g4f.Provider import GetGpt, You
 from config import wait, find_chrome_binary, get_browser_version, Config, logger
 from typing import Dict, Any, List
 from datetime import datetime
+from time import sleep, time
 from selenium.webdriver.common.by import By
 
 def get_ai_provider():
@@ -189,17 +190,46 @@ async def send_log(message: str, type: str = "info") -> None:
     else:
         logger.info(f"[{type}] {message}")
 
+def wait_for_cloudflare(browser, timeout: int = Config.CLOUDFLARE_TIMEOUT) -> bool:
+    """Wait for user to solve Cloudflare challenge."""
+    start_time = time()
+    while time() - start_time < timeout:
+        if "Attention Required! | Cloudflare" not in browser.title:
+            return True
+        sleep(1)
+    return False
+
+def handle_cloudflare(browser) -> bool:
+    """Handle Cloudflare challenge detection and bypass."""
+    if "Attention Required! | Cloudflare" in browser.title:
+        logger.warning("Cloudflare challenge detected")
+        if Config.HEADLESS_MODE:
+            raise Exception("Cannot bypass Cloudflare in headless mode. Set HEADLESS=false to enable manual bypass.")
+        
+        logger.info("Waiting for user to complete Cloudflare challenge...")
+        if not wait_for_cloudflare(browser):
+            raise Exception("Cloudflare challenge timeout")
+        logger.info("Cloudflare challenge completed")
+        return True
+    return False
+
 def login(nation_name: str, password: str) -> None:
     try:
         logger.info("Initializing browser session...")
+        browser.get("https://example.com")  # Initial test page
+        sleep(random.uniform(2, 4))
+        
+        logger.info("Navigating to NationStates...")
         browser.get("https://www.nationstates.net")
         
-        # Wait a bit before navigating to login
-        sleep(3)
+        if handle_cloudflare(browser):
+            # Re-navigate after Cloudflare challenge
+            browser.get("https://www.nationstates.net")
+            sleep(random.uniform(1, 2))
         
         logger.info("Navigating to login page...")
         browser.get("https://www.nationstates.net/page=login")
-        sleep(2)  # Let the page settle
+        sleep(random.uniform(2, 3))  # Random delay to appear more human-like
         
         logger.info("Waiting for login form...")
         nation_input = wait.until(EC.presence_of_element_located((By.NAME, "nation")))

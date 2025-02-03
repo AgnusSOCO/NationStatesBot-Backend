@@ -112,6 +112,27 @@ The application will be available at:
 
 ## Environment Variables
 
+### Bot Configuration (.env)
+Create a `.env` file in the root directory:
+```env
+# Required settings
+NATION_NAME=your_nation
+PASSWORD=your_password
+
+# Optional Discord integration
+DISCORD_TOKEN=your_discord_token
+DISCORD_CHANNEL_ID=your_channel_id
+
+# Cloudflare bypass settings
+HEADLESS=false  # Allow manual Cloudflare bypass
+CLOUDFLARE_TIMEOUT=300  # Seconds to wait for challenge completion
+```
+
+When Cloudflare protection is triggered:
+1. A browser window will open
+2. Complete the Cloudflare challenge manually
+3. The bot will continue automatically after completion
+
 ### Frontend (.env)
 Create a `.env` file in `dashboard/bot-dashboard-ui`:
 ```env
