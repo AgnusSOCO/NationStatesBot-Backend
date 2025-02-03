@@ -55,3 +55,4 @@ Werkzeug>=2.3.7
 wsproto>=1.2.0
 yarl>=1.9.2
 psutil>=5.9.0
+setuptools>=69.0.3  # Required for distutils in Python 3.12
