@@ -26,8 +26,13 @@ cd NationStatesBot-Backend
 - Install required system packages:
 ```bash
 sudo apt-get update
-sudo apt-get install -y python3-dev python3-setuptools build-essential
+sudo apt-get install -y python3-dev python3-setuptools build-essential python3-distutils
 ```
+
+- If you encounter a "No module named 'distutils'" error:
+  1. Ensure setuptools is installed: `pip install setuptools`
+  2. Install Python development packages: `sudo apt-get install python3-dev`
+  3. For Python 3.12+, the distutils module is provided by setuptools
 
 #### Windows-Specific Notes
 - Install Python 3.12+ from python.org (not Microsoft Store version)
