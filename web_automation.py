@@ -71,15 +71,26 @@ def create_browser(max_retries=3):
                 options = uc.ChromeOptions()
                 
             options.binary_location = binary_path
-            options.add_argument('--headless=new')
+            
+            # Configure browser visibility for Cloudflare handling
+            if Config.HEADLESS_MODE:
+                options.add_argument('--headless=new')
+                logger.info("Running in headless mode")
+            else:
+                logger.info("Running in visible mode for Cloudflare handling")
+                
+            # Configure window size and other options
+            options.add_argument(f'--window-size={Config.BROWSER_WINDOW_SIZE}')
             options.add_argument('--no-sandbox')
             options.add_argument('--disable-dev-shm-usage')
             options.add_argument('--disable-gpu')
             options.add_argument('--disable-extensions')
             options.add_argument('--disable-notifications')
             options.add_argument('--disable-popup-blocking')
-            options.add_argument('--window-size=1920,1080')
             options.add_argument('--disable-blink-features=AutomationControlled')
+            
+            # Set a random user agent
+            options.add_argument(f'user-agent={random.choice(Config.BROWSER_USER_AGENTS)}')
             
             # Use a specific port to avoid conflicts
             port = find_free_port()
@@ -90,7 +101,7 @@ def create_browser(max_retries=3):
             )
             
             if platform.system() == "Darwin":  # macOS
-                logger.info("Creating Chrome instance with selenium-stealth...")
+                logger.info(f"Creating Chrome instance with selenium-stealth (headless: {Config.HEADLESS_MODE})...")
                 browser = webdriver.Chrome(service=service, options=options)
                 from selenium_stealth import stealth
                 stealth(
@@ -103,12 +114,13 @@ def create_browser(max_retries=3):
                     fix_hairline=True,
                 )
             else:
-                logger.info("Creating undetected-chromedriver instance...")
+                logger.info(f"Creating undetected-chromedriver instance (headless: {Config.HEADLESS_MODE})...")
                 browser = uc.Chrome(
                     driver_executable_path=driver_path,
                     options=options,
                     version_main=int(major_version),
-                    service=service
+                    service=service,
+                    headless=Config.HEADLESS_MODE  # Explicitly set headless mode
                 )
             
             # Configure timeouts
