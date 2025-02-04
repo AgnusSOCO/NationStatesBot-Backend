@@ -14,7 +14,7 @@ class Config:
     DISCORD_ENABLED: bool = False
     DISCORD_TOKEN: Optional[str] = None
     DISCORD_CHANNEL_ID: Optional[int] = None
-    HEADLESS_MODE: bool = os.getenv('HEADLESS', 'false').lower() == 'true'
+    HEADLESS_MODE: bool = False  # Force visible mode for Cloudflare challenges
     CLOUDFLARE_TIMEOUT: int = int(os.getenv('CLOUDFLARE_TIMEOUT', '300'))
     
     # Browser configuration
