@@ -1,35 +1,59 @@
-import platform
-import logging
-import sys
+import asyncio
+import datetime
 import g4f
+import logging
 import os
+import platform
 import psutil
+import random
 import re
+import signal
+import socket
+import subprocess
+import sys
+import time
+import types
 import undetected_chromedriver as uc
+from bs4 import BeautifulSoup
 from g4f.Provider import GetGpt, You
-from config import wait, find_chrome_binary, get_browser_version, Config
-from typing import Dict, Any, List
-from datetime import datetime
-from time import sleep, time
+from selenium import webdriver
+from selenium.common.exceptions import TimeoutException, WebDriverException
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+from typing import Dict, Any, List
+from webdriver_manager.chrome import ChromeDriverManager
 
-# Configure root logger with stdout handler
+from config import wait, find_chrome_binary, get_browser_version, Config
+
+# Configure logging once at module level
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[logging.StreamHandler(sys.stdout)]
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler('browser_debug.log')
+    ]
 )
 
 # Get logger for this module
 logger = logging.getLogger(__name__)
 
-# Ensure logger has at least one handler
-if not logger.handlers:
-    logger.addHandler(logging.StreamHandler(sys.stdout))
-    logger.setLevel(logging.INFO)
+# Configure logging once at module level
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler('browser_debug.log')
+    ]
+)
+
+# Get logger for this module
+logger = logging.getLogger(__name__)
 
 # Configure selenium loggers
 for logger_name in ['selenium', 'undetected_chromedriver']:
@@ -38,31 +62,26 @@ for logger_name in ['selenium', 'undetected_chromedriver']:
     if not selenium_logger.handlers:
         selenium_logger.addHandler(logging.StreamHandler(sys.stdout))
 
-# Force non-headless mode through environment variables
-os.environ['UC_HEADLESS'] = 'false'
-os.environ['HEADLESS'] = 'false'
-os.environ['DISPLAY'] = ':0'
+# Configure logging once at module level
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler('browser_debug.log')
+    ]
+)
 
 def get_ai_provider():
     """Get the appropriate AI provider based on the platform."""
     if platform.system() == "Windows":
         return You  # Browser-based provider for Windows
     return GetGpt  # Default provider for other platforms
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.keys import Keys
-from selenium import webdriver
-from time import sleep
-import random
 
 class VisibleChrome(uc.Chrome):
     def __init__(self, *args, **kwargs):
         logger = logging.getLogger(__name__)
         logger.info("Initializing VisibleChrome...")
-        
-        # Force non-headless mode through multiple methods
-        os.environ['UC_HEADLESS'] = 'false'
-        os.environ['HEADLESS'] = 'false'
-        os.environ['DISPLAY'] = ':0'
         
         # Create options with minimal settings
         options = uc.ChromeOptions()
@@ -91,48 +110,12 @@ class VisibleChrome(uc.Chrome):
         self.set_window_size(1920, 1080)
         self.execute_script("window.focus()")
 
-import logging
-import subprocess
-import psutil
-import socket
-import os
-import time
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-
-logger = logging.getLogger(__name__)
-
 def create_browser(max_retries=3):
     """Create a new browser instance with platform-specific automation."""
+    global os
     logger = logging.getLogger(__name__)
     
-    # Configure logging
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.StreamHandler(),
-            logging.FileHandler('browser_debug.log')
-        ]
-    )
-    
-    # Force non-headless mode
-    os.environ.pop('UC_HEADLESS', None)
-    os.environ.pop('HEADLESS', None)
-    os.environ['DISPLAY'] = ':0'
-    
-    # Kill any existing Chrome processes
-    os.system('pkill -f "chrome|chromedriver"')
-    time.sleep(2)
-    
-    # Kill any existing Chrome processes
-    os.system('pkill -f "chrome|chromedriver"')
-    time.sleep(2)
-    
-    # Force non-headless mode
+    # Configure environment for visibility
     os.environ.pop('UC_HEADLESS', None)
     os.environ.pop('HEADLESS', None)
     os.environ['DISPLAY'] = ':0'
@@ -143,20 +126,18 @@ def create_browser(max_retries=3):
     options.add_argument('--start-maximized')
     options.add_argument('--disable-blink-features=AutomationControlled')
     options.add_argument('--window-size=1920,1080')
-    options.add_argument('--disable-gpu')
-    options.add_argument('--remote-debugging-port=0')
-    options.add_experimental_option('excludeSwitches', ['enable-automation'])
-    options.add_experimental_option('useAutomationExtension', False)
-    options.headless = False
+    options.add_argument('--no-headless')
+    options.add_argument('--disable-headless')
+    options.add_argument('--headless=0')
     
     # Create browser instance with retries
     for attempt in range(max_retries):
         try:
             logger.info(f"Browser creation attempt {attempt + 1}/{max_retries}")
-            browser = uc.Chrome(
+            browser = VisibleChrome(
                 options=options,
                 headless=False,
-                use_subprocess=False,
+                use_subprocess=True,
                 version_main=132
             )
             
@@ -200,53 +181,6 @@ def create_browser(max_retries=3):
     options.add_argument('--disable-features=IsolateOrigins,site-per-process')
     options.add_argument('--disable-site-isolation-trials')
     
-    # Create browser instance with retries
-    for attempt in range(max_retries):
-        try:
-            logger.info(f"Browser creation attempt {attempt + 1}/{max_retries}")
-            browser = uc.Chrome(
-                options=options,
-                headless=False,
-                use_subprocess=True,
-                version_main=132,
-                browser_executable_path='/usr/bin/google-chrome'
-            )
-            
-            # Test browser connection
-            logger.info(f"Testing browser connection (attempt {attempt + 1})...")
-            browser.get('about:blank')
-            browser.current_url
-            logger.info("Browser connection verified")
-            return browser
-            
-        except Exception as e:
-            logger.error(f"Attempt {attempt + 1} failed: {str(e)}")
-            if 'browser' in locals():
-                try:
-                    browser.quit()
-                except:
-                    pass
-            if attempt == max_retries - 1:
-                raise
-            time.sleep(2)
-    
-    raise Exception("Failed to create browser after all retries")
-    
-    # Kill any existing Chrome processes
-    def kill_chrome_processes():
-        for proc in psutil.process_iter(['pid', 'name']):
-            try:
-                if any(x in proc.info['name'].lower() for x in ['chrome', 'chromedriver']):
-                    psutil.Process(proc.info['pid']).terminate()
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                pass
-        time.sleep(2)
-    
-    # Clean up environment and force non-headless mode
-    os.environ.pop('UC_HEADLESS', None)
-    os.environ.pop('HEADLESS', None)
-    os.environ['DISPLAY'] = ':0'
-    
     # Configure Chrome options for visibility
     options = uc.ChromeOptions()
     options.add_argument('--no-sandbox')
@@ -254,21 +188,9 @@ def create_browser(max_retries=3):
     options.add_argument('--start-maximized')
     options.add_argument('--disable-blink-features=AutomationControlled')
     options.add_argument('--window-size=1920,1080')
-    options.add_argument('--remote-debugging-port=0')
-    options.add_argument('--disable-gpu')
-    options.add_argument('--enable-logging')
-    options.add_argument('--v=1')
     options.add_argument('--no-headless')
     options.add_argument('--disable-headless')
     options.add_argument('--headless=0')
-    options.add_argument('--force-device-scale-factor=1')
-    options.add_argument('--force-color-profile=srgb')
-    options.add_argument('--disable-background-networking')
-    options.add_argument('--disable-features=IsolateOrigins,site-per-process')
-    options.add_argument('--disable-site-isolation-trials')
-    
-    # Kill existing processes and ensure clean environment
-    kill_chrome_processes()
     
     # Create browser instance with retries
     for attempt in range(max_retries):
@@ -278,8 +200,7 @@ def create_browser(max_retries=3):
                 options=options,
                 headless=False,
                 use_subprocess=True,
-                version_main=132,
-                browser_executable_path='/usr/bin/google-chrome'
+                version_main=132
             )
             
             # Configure window and ensure visibility
@@ -305,26 +226,6 @@ def create_browser(max_retries=3):
             if attempt == max_retries - 1:
                 raise
             time.sleep(2)
-            kill_chrome_processes()
-    
-    # Force non-headless mode through environment variables
-    os.environ.pop('UC_HEADLESS', None)
-    os.environ.pop('HEADLESS', None)
-    os.environ['DISPLAY'] = ':99'
-    
-    # Ensure Xvfb is running
-    try:
-        subprocess.Popen(['Xvfb', ':99', '-screen', '0', '1920x1080x24'])
-    except Exception as e:
-        logger.warning(f"Failed to start Xvfb (might be already running): {e}")
-    
-    # Force non-headless mode through environment variables
-    os.environ['UC_HEADLESS'] = 'false'
-    os.environ['HEADLESS'] = 'false'
-    os.environ['DISPLAY'] = ':0'
-    
-    if platform.system() != "Darwin":
-        import undetected_chromedriver as uc
     
     def find_free_port():
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -332,18 +233,6 @@ def create_browser(max_retries=3):
             s.listen(1)
             port = s.getsockname()[1]
         return port
-    
-    # Kill any existing browser processes
-    try:
-        for proc in psutil.process_iter(['pid', 'name']):
-            if any(name in proc.info['name'].lower() 
-                  for name in ['chrome', 'chromium', 'thorium', 'chromedriver']):
-                psutil.Process(proc.info['pid']).terminate()
-                logger.info(f"Terminated browser process: {proc.info['name']}")
-    except Exception as e:
-        logger.warning(f"Error cleaning up processes: {e}")
-    
-    sleep(2)  # Wait for processes to clean up
     
     for attempt in range(max_retries):
         service = None
@@ -406,22 +295,16 @@ def create_browser(max_retries=3):
                 logger.info("Creating undetected-chromedriver instance in visible mode...")
                 # Initialize Chrome with visibility settings
                 # Clean up any existing Chrome processes
-                import psutil
-                import time
-                import signal
-                import os
-                
                 def kill_chrome_processes():
                     """Kill any existing Chrome processes."""
                     # Get module logger
-                    import logging
                     logger = logging.getLogger(__name__)
                     
                     # First try graceful termination
                     for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
                         try:
                             if any(x in proc.info['name'].lower() for x in ['chrome', 'chromedriver']):
-                                os.kill(proc.info['pid'], signal.SIGTERM)
+                                psutil.Process(proc.info['pid']).terminate()
                                 logger.info(f"Terminated browser process: {proc.info['name']}")
                         except (psutil.NoSuchProcess, psutil.AccessDenied, ProcessLookupError):
                             pass
@@ -454,17 +337,11 @@ def create_browser(max_retries=3):
                 
                 kill_chrome_processes()
                 
-                # Ensure clean environment
-                os.environ['DISPLAY'] = ':0'
-                if 'CHROME_PATH' in os.environ:
-                    del os.environ['CHROME_PATH']
+                # Environment variables are handled at module level
                 
                 # Configure Chrome options for visible mode
                 logger = logging.getLogger(__name__)
                 logger.info("Creating browser with forced visible mode for Cloudflare handling...")
-                
-                # Import required modules
-                import undetected_chromedriver as uc
                 
                 # Configure undetected-chromedriver logging
                 for logger_name in ['undetected_chromedriver', 'selenium.webdriver.remote.remote_connection']:
@@ -472,11 +349,6 @@ def create_browser(max_retries=3):
                     uc_logger.setLevel(logging.WARNING)
                     if not uc_logger.handlers:
                         uc_logger.addHandler(logging.StreamHandler(sys.stdout))
-                
-                # Force non-headless mode through environment variables
-                os.environ['UC_HEADLESS'] = 'false'
-                os.environ['HEADLESS'] = 'false'
-                os.environ['DISPLAY'] = ':0'
                 
                 # Patch undetected-chromedriver to prevent headless mode
                 def patch_uc():
@@ -559,10 +431,7 @@ def create_browser(max_retries=3):
                     # Create Chrome class with overridden headless configuration
                     class VisibleChrome(uc.Chrome):
                         def __init__(self, *args, **kwargs):
-                            # Force non-headless mode
-                            os.environ['UC_HEADLESS'] = 'false'
-                            os.environ['DISPLAY'] = ':0'
-                            
+                            logger.info("Initializing VisibleChrome with non-headless configuration...")
                             # Create options first
                             options = self._create_options()
                             
@@ -576,36 +445,19 @@ def create_browser(max_retries=3):
                                 'version_main': int(kwargs.get('version_main', 0))
                             })
                             
-                            # Patch undetected-chromedriver
-                            import undetected_chromedriver as uc
-                            def noop(*args, **kwargs): pass
-                            setattr(uc.Chrome, '_configure_headless', noop)
-                            setattr(uc.Chrome, '_start_xvfb', noop)
-                            setattr(uc.Chrome, 'start_session', self.start_session)
-                            
-                            # Initialize with our custom options
                             super().__init__(*args, **kwargs)
                             
-                            # Force window to be visible
+                            # Configure window visibility
                             self.maximize_window()
                             self.set_window_position(0, 0)
                             self.set_window_size(1920, 1080)
-                            
-                            # Ensure window is active and focused
                             self.execute_script("window.focus()")
-                            self.execute_cdp_cmd('Page.bringToFront', {})
                             
-                            # Inject anti-detection scripts
+                            # Inject minimal anti-detection script
                             self.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
                                 'source': '''
-                                    Object.defineProperties(navigator, {
-                                        webdriver: {get: () => undefined},
-                                        headless: {get: () => false},
-                                        chrome: {get: () => ({app: {isInstalled: false}, runtime: {}})}
-                                    });
+                                    Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
                                     window.chrome = {app: {isInstalled: false}, runtime: {}};
-                                    Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
-                                    Object.defineProperty(navigator, 'languages', {get: () => ['en-US', 'en']});
                                 '''
                             })
                             
@@ -640,20 +492,6 @@ def create_browser(max_retries=3):
                             """Prevent headless mode configuration."""
                             pass
                             
-                            # Initialize browser with non-headless configuration
-                            self.options = uc.ChromeOptions()
-                            self.options.headless = False
-                            self.options.add_argument('--disable-headless')
-                            self.options.add_argument('--headless=0')
-                            self.options.add_argument('--start-maximized')
-                            self.options.add_argument('--window-size=1920,1080')
-                            self.options.add_experimental_option("excludeSwitches", ["enable-automation"])
-                            self.options.add_experimental_option("useAutomationExtension", False)
-                            
-                            # Set environment variables
-                            os.environ['UC_HEADLESS'] = 'false'
-                            os.environ['DISPLAY'] = ':0'
-                            
                         def start_session(self, *args, **kwargs):
                             """Initialize browser session with minimal configuration."""
                             try:
@@ -671,66 +509,9 @@ def create_browser(max_retries=3):
                                 logger.error(f"Failed to start browser session: {e}")
                                 raise
                     
-                    # Set environment variables for non-headless mode
-                    os.environ['UC_HEADLESS'] = 'false'
-                    os.environ['DISPLAY'] = ':0'
-                    
                     # Kill any existing Chrome processes
                     kill_chrome_processes()
                     time.sleep(2)
-                    
-                    # Configure Chrome for visible mode
-                    os.environ['UC_HEADLESS'] = 'false'
-                    os.environ['HEADLESS'] = 'false'
-                    
-                    # Kill any existing Chrome processes
-                    kill_chrome_processes()
-                    time.sleep(2)
-                    
-                    # Kill any existing Chrome processes
-                    kill_chrome_processes()
-                    time.sleep(2)
-                    
-                    # Patch undetected-chromedriver's patcher module
-                    import undetected_chromedriver.patcher as patcher
-                    import types
-                    
-                    def noop(*args, **kwargs): pass
-                    
-                    # Save original methods
-                    if not hasattr(patcher.Patcher, '_orig_patch'):
-                        patcher.Patcher._orig_patch = patcher.Patcher.patch
-                    
-                    # Create a modified patch function that forces non-headless mode
-                    def modified_patch(self, *args, **kwargs):
-                        from selenium.webdriver.chrome.options import Options
-                        options = Options()
-                        options.add_argument('--no-headless')
-                        options.add_argument('--disable-headless')
-                        options.add_argument('--headless=0')
-                        options.add_argument('--start-maximized')
-                        options.add_argument('--window-size=1920,1080')
-                        return options
-                    
-                    # Patch Patcher class methods
-                    setattr(patcher.Patcher, 'patch', types.MethodType(modified_patch, patcher.Patcher))
-                    setattr(patcher.Patcher, 'set_headless', noop)
-                    setattr(patcher.Patcher, '_configure_headless', noop)
-                    
-                    logger.info("Successfully patched undetected-chromedriver")
-                    
-                    # Kill any existing browser processes
-                    kill_chrome_processes()
-                    time.sleep(2)
-                    
-                    # Kill any existing Chrome processes
-                    kill_chrome_processes()
-                    time.sleep(2)
-                    
-                    # Set up environment for visible mode
-                    os.environ.pop('UC_HEADLESS', None)
-                    os.environ.pop('HEADLESS', None)
-                    os.environ['DISPLAY'] = ':0'
                     
                     # Configure Chrome options
                     options = uc.ChromeOptions()
@@ -795,7 +576,7 @@ def create_browser(max_retries=3):
                             if test_attempt == max_test_retries - 1:
                                 raise
                             logger.warning(f"Browser test failed: {test_e}")
-                            sleep(2)
+                            time.sleep(2)
                     
                     raise Exception("Failed to verify browser connection")
                 except Exception as e:
@@ -821,14 +602,14 @@ def create_browser(max_retries=3):
                     pass
             if attempt == max_retries - 1:
                 raise
-            sleep(3)
+            time.sleep(3)
             
             if attempt == max_retries - 1:
                 logger.error("All attempts to create browser failed")
                 if 'chrome not installed' in str(e).lower():
                     logger.error("Please install Chrome/Chromium browser first")
                 raise
-            sleep(3)
+            time.sleep(3)
             continue
             
     raise Exception("Failed to create browser after all retries")
@@ -842,25 +623,12 @@ except Exception as e:
     if 'chrome not installed' in str(e).lower():
         logger.error("Please install Chrome/Chromium browser first")
     raise Exception(error_msg)
-import random
-import asyncio
-from bs4 import BeautifulSoup
-import re 
-from time import sleep, time
-from datetime import datetime
-from typing import List, Dict, Any
-import undetected_chromedriver as uc
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-
 # In-memory storage for logs
 bot_logs: List[Dict[str, Any]] = []
 
 async def send_log(message: str, type: str = "info") -> None:
     log = {
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.datetime.now().isoformat(),
         "message": message,
         "type": type
     }
@@ -873,7 +641,7 @@ async def send_log(message: str, type: str = "info") -> None:
 
 def wait_for_cloudflare(browser, timeout: int = Config.CLOUDFLARE_TIMEOUT) -> bool:
     """Wait for user to solve Cloudflare challenge."""
-    start_time = time()
+    start_time = time.time()
     
     # Force window to be visible and focused
     browser.maximize_window()
@@ -906,7 +674,7 @@ def wait_for_cloudflare(browser, timeout: int = Config.CLOUDFLARE_TIMEOUT) -> bo
         '#challenge-title'
     ]
     
-    while time() - start_time < timeout:
+    while time.time() - start_time < timeout:
         try:
             # Ensure browser remains visible
             browser.maximize_window()
@@ -931,7 +699,7 @@ def wait_for_cloudflare(browser, timeout: int = Config.CLOUDFLARE_TIMEOUT) -> bo
                 logger.info("Cloudflare challenge completed successfully")
                 return True
                 
-            sleep(1)
+            time.sleep(1)
             
         except Exception as e:
             logger.error(f"Error checking Cloudflare status: {e}")
@@ -1007,7 +775,7 @@ def login(nation_name: str, password: str) -> None:
     try:
         logger.info("Initializing browser session...")
         browser.get("https://example.com")  # Initial test page
-        sleep(random.uniform(2, 4))
+        time.sleep(random.uniform(2, 4))
         
         logger.info("Navigating to NationStates...")
         browser.get("https://www.nationstates.net")
@@ -1015,27 +783,27 @@ def login(nation_name: str, password: str) -> None:
         if handle_cloudflare(browser):
             # Re-navigate after Cloudflare challenge
             browser.get("https://www.nationstates.net")
-            sleep(random.uniform(1, 2))
+            time.sleep(random.uniform(1, 2))
         
         logger.info("Navigating to login page...")
         browser.get("https://www.nationstates.net/page=login")
-        sleep(random.uniform(2, 3))  # Random delay to appear more human-like
+        time.sleep(random.uniform(2, 3))  # Random delay to appear more human-like
         
         logger.info("Waiting for login form...")
         nation_input = wait.until(EC.presence_of_element_located((By.NAME, "nation")))
         password_input = wait.until(EC.presence_of_element_located((By.NAME, "password")))
         
         # Add random delays between actions
-        sleep(random.uniform(0.5, 1.5))
+        time.sleep(random.uniform(0.5, 1.5))
         
         logger.info("Entering credentials...")
         nation_input.send_keys(nation_name)
-        sleep(random.uniform(0.3, 0.7))
+        time.sleep(random.uniform(0.3, 0.7))
         password_input.send_keys(password)
         
         logger.info("Attempting login...")
         login_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@type='submit'][contains(text(), 'Login')]")))
-        sleep(random.uniform(0.5, 1.0))
+        time.sleep(random.uniform(0.5, 1.0))
         login_button.click()
         
         logger.info("Verifying login...")
